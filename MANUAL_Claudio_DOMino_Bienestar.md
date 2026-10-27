@@ -17,7 +17,7 @@ Dirección (todo) · Profesor/a o profesional (ve su propia agenda) · Recepció
 ## Para el estudio (The DOM Studio Web): armar la agenda de un negocio
 1. En la planilla de turnos, hoja `config`: fila `actividades` con los códigos (`gimnasio`, `clases`, `yoga`, `spa`, `peluqueria`, `barberia`, `unas`, `estetica`, `consultorio`) separados por coma.
 2. En Apps Script ejecutar `cargarActividades`. Se crean salas, clases con cupo, servicios y horarios típicos. Se puede repetir sin duplicar.
-3. Ajustar en la planilla precios no (la app no maneja precios todavía), pero sí horarios, cupos, duraciones, nombres y profesionales (hoja `recursos`, columna `usuario_email`).
+3. Ajustar en la planilla los horarios, cupos, duraciones, nombres y profesionales (hoja `recursos`, columna `usuario_email`). La app todavía no maneja precios.
 
 ## Lo que todavía no está
 Cuotas y planes de socios con vencimiento, asistencia a clases, lista de espera, página pública del negocio y gestión de documentos (figura como «Próximamente»). No prometer nada de eso como disponible.
