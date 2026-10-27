@@ -1,6 +1,6 @@
 // Vínculo con las fichas de DOMino Profesional (Firestore). Usa la sesión del Hub: mismo sitio, misma sesión.
 // Si no hay sesión (o Firebase no carga), el panel de turnos sigue funcionando sin esta parte.
-const CFG = { apiKey: "PEGAR_apiKey", authDomain: "PEGAR_authDomain", projectId: "PEGAR_projectId", storageBucket: "PEGAR_storageBucket", messagingSenderId: "PEGAR_messagingSenderId", appId: "PEGAR_appId" };
+const CFG = { apiKey: "AIzaSyB0y7cFZ-HnGrasLsg-HTeWXvenZSZzSpQ", authDomain: "domino-bienestar.firebaseapp.com", projectId: "domino-bienestar", storageBucket: "domino-bienestar.firebasestorage.app", messagingSenderId: "68194219142", appId: "1:68194219142:web:cf68e1a910584c963f4d07" };
 const V = '10.8.0', base = `https://www.gstatic.com/firebasejs/${V}/`;
 let F = null, estado = null;
 

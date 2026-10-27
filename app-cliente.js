@@ -5,12 +5,12 @@ import { getAuth, onAuthStateChanged,signOut } from "https://www.gstatic.com/fir
 
 // Tu misma configuración de Firebase (Ambas apps apuntan al mismo motor)
 const firebaseConfig = {
-  apiKey: "PEGAR_apiKey",
-  authDomain: "PEGAR_authDomain",
-  projectId: "PEGAR_projectId",
-  storageBucket: "PEGAR_storageBucket",
-  messagingSenderId: "PEGAR_messagingSenderId",
-  appId: "PEGAR_appId"
+  apiKey: "AIzaSyB0y7cFZ-HnGrasLsg-HTeWXvenZSZzSpQ",
+  authDomain: "domino-bienestar.firebaseapp.com",
+  projectId: "domino-bienestar",
+  storageBucket: "domino-bienestar.firebasestorage.app",
+  messagingSenderId: "68194219142",
+  appId: "1:68194219142:web:cf68e1a910584c963f4d07"
 };
 
 const app = initializeApp(firebaseConfig);

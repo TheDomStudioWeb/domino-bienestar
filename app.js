@@ -5,12 +5,12 @@ import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstati
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
 const firebaseConfig = {
-  apiKey: "PEGAR_apiKey",
-  authDomain: "PEGAR_authDomain",
-  projectId: "PEGAR_projectId",
-  storageBucket: "PEGAR_storageBucket",
-  messagingSenderId: "PEGAR_messagingSenderId",
-  appId: "PEGAR_appId",
+  apiKey: "AIzaSyB0y7cFZ-HnGrasLsg-HTeWXvenZSZzSpQ",
+  authDomain: "domino-bienestar.firebaseapp.com",
+  projectId: "domino-bienestar",
+  storageBucket: "domino-bienestar.firebasestorage.app",
+  messagingSenderId: "68194219142",
+  appId: "1:68194219142:web:cf68e1a910584c963f4d07",
   measurementId: ""
 };
 
