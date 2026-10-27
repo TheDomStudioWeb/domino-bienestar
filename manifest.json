@@ -1,0 +1,18 @@
+{
+    "name": "DOMino · Veterinaria (demo)",
+    "short_name": "Veterinaria",
+    "id": "./",
+    "lang": "es",
+    "description": "Hub de gestión para estudios profesionales",
+    "start_url": "./",
+    "display": "standalone",
+    "background_color": "#0a0a0a",
+    "theme_color": "#0a0a0a",
+    "icons": [
+        {
+            "src": "imagenes/icono-512.png",
+            "sizes": "512x512",
+            "type": "image/png"
+        }
+    ]
+}

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal del cliente | DOMino Profesional</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="hub.css">
+</head>
+<body style="padding: 20px; max-width: 600px; margin: 0 auto;">
+
+    <div style="width: 100%; max-width: 500px;">
+        <div style="text-align: center; margin-bottom: 30px;">
+            <img src="imagenes/logo.png" alt="Logo" data-marca-logo style="width: 40px; margin-bottom: 15px;">
+            <h2 style="letter-spacing: 2px;">ESTUDIO PROFESIONAL</h2>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Portal de Envío Documental</p>
+        </div>
+
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <select id="selector-empresas-cliente" class="full-selector" style="flex: 1; margin-right: 10px;">
+    </select>
+    <button onclick="cerrarSesionCliente()" class="btn-baja" style="white-space: nowrap;">
+        Cerrar Sesión
+    </button>
+</div>
+        <div class="upload-card">
+            <h3>Enviar Material al Estudio</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">Seleccione el área a la que corresponde este documento.</p>
+            
+            <form id="form-cliente-subir">
+                <div class="form-group">
+                    <label>Destino / Categoría</label>
+                    <select id="cliente-categoria" required>
+                        <option value="" disabled selected>Selecciona un área...</option>
+                        <option value="Impuestos">Facturas y Compras (Impuestos)</option>
+                        <option value="RRHH">Altas, Bajas y Novedades (Sueldos)</option>
+                        <option value="Legal">Contratos y Sociedades (Legal)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Archivo / Documento</label>
+                    <input type="file" id="cliente-archivo" required multiple style="padding: 10px; background: var(--bg-base); color: var(--text-main); border: 1px dashed var(--text-muted); cursor: pointer;">
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 20px; width: 100%;">Subir y Notificar al Estudio</button>
+            </form>
+        </div>
+
+        <div id="mensaje-exito" style="display: none; margin-top: 20px; padding: 15px; background: var(--bg-panel); border-left: 4px solid var(--verde-ok); border-radius: 6px;">
+            <h4 style="color: var(--verde-ok);">¡Documento enviado con éxito!</h4>
+            <p style="font-size: 0.85rem; color: var(--text-muted);">Nuestro equipo ya ha sido notificado y comenzará a procesarlo.</p>
+        </div>
+    </div>
+
+    <p id="aviso-permisos" style="display:none; margin-top:20px; padding:12px 14px; border-left:4px solid var(--text-muted); background: var(--bg-panel); border-radius:6px; font-size:0.9rem; color: var(--text-muted);"></p>
+    <div id="bloque-entregas" style="margin-top: 30px; border: 1px solid var(--verde-ok); border-radius: 12px; padding: 25px; box-sizing: border-box; width: 100%;">
+    <h3 style="margin-bottom: 15px; color: var(--verde-ok);">📥 Documentación del Estudio</h3>
+    <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+    <button id="pill-reciente" class="btn-primary" onclick="filtrarEntregasFecha('reciente')" style="border-radius: 20px; padding: 4px 14px; font-size: 0.85rem;">
+        Más reciente
+    </button>
+    <button id="pill-antiguo" class="btn-secundario" onclick="filtrarEntregasFecha('antiguo')" style="border-radius: 20px; padding: 4px 14px; font-size: 0.85rem;">
+        Más antiguo
+    </button>
+</div>
+<div style="display: flex; gap: 10px; margin-bottom: 20px;">
+    <button id="btn-recientes" class="btn-primary" onclick="filtrarEntregas('recientes')">
+        Recientes
+    </button>
+    <button id="btn-historicos" class="btn-secundario" onclick="filtrarEntregas('historicos')">
+        Históricos
+    </button>
+</div>
+    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">
+        Archivos enviados por su estudio para descargar.
+    </p>
+    <div id="lista-entregas">
+        <p style="color: var(--text-muted);">Cargando...</p>
+    </div>
+</div>
+
+    <p class="firma">Desarrollado por The DOM Studio Web · WhatsApp 261-3431216 · thedomstudioweb@gmail.com</p>
+    <script src="modulos.js"></script>
+    <script src="proximamente.js"></script>
+    <script src="atras.js"></script>
+    <script>activarAtras(function(){return false;});</script>
+    <script type="module" src="app-cliente.js"></script>
+</body>
+</html>

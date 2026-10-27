@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ingresar | DOMino Profesional</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="hub.css">
+</head>
+<body style="display: flex; justify-content: center; align-items: center; min-height: 100vh;">
+    <div style="width: 100%; max-width: 420px; padding: 20px;">
+        
+        <div style="display: flex; justify-content: center; align-items: center; margin-bottom: 40px;">
+            <img src="imagenes/logo.png" alt="DOMino" style="height: 70px;">
+        </div>
+
+        <div class="upload-card">
+            <h3 style="text-align: center; margin-bottom: 5px;">Bienvenido</h3>
+            <p style="text-align: center; color: var(--text-muted); font-size: 0.85rem; margin-bottom: 25px;">Ingresá tus credenciales para continuar</p>
+            
+            <div class="form-group">
+                <label>Correo electrónico</label>
+                <input type="email" id="login-email" placeholder="tu@email.com">
+            </div>
+            <div class="form-group" style="margin-top: 15px;">
+                <label>Contraseña</label>
+                <div style="position: relative;">
+    <input type="password" id="login-password" placeholder="••••••••" style="width: 100%; padding-right: 40px;">
+    <button type="button" id="btn-ojo" onclick="togglePassword()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 1.2rem;">👁</button>
+</div>
+            </div>
+
+            <div id="login-error" style="display: none; margin-top: 15px; padding: 10px; background: var(--bg-panel); border-left: 4px solid var(--rojo-alerta); border-radius: 4px;">
+                <p style="color: var(--rojo-alerta); font-size: 0.85rem;" id="login-error-msg"></p>
+            </div>
+
+            <button id="btn-login" class="btn-primary" style="width: 100%; margin-top: 25px; padding: 12px;">
+                Ingresar
+            </button>
+            <p style="text-align: center; margin-top: 15px; font-size: 0.85rem;">
+    <a href="#" id="link-recuperar" style="color: var(--text-muted);">¿Olvidaste tu contraseña?</a>
+    <p style="color: var(--text-muted); font-size: .8rem; margin-top: 12px; line-height: 1.4;">¿Primera vez? Revise su correo: el estudio le envió un mensaje para crear su clave.</p>
+</p>
+            </div>
+
+        <p style="text-align: center; color: var(--text-muted); font-size: 0.75rem; margin-top: 20px;">
+            DOMino © 2026 · The DOM Studio Web
+        </p>
+    </div>
+    <script type="module" src="login.js"></script>
+</body>
+</html>

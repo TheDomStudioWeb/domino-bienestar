@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DOMino Profesional | Hub de gestión</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-title" content="DOMino Profesional">
+    <meta name="application-name" content="DOMino Profesional">
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="hub.css">
+    <meta name="theme-color" content="#0a0a0a">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <link rel="icon" type="image/png" href="imagenes/icono-512.png">
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+    <div class="brand-wrapper">
+        <a class="logo-container" href="#" onclick="event.preventDefault(); navegarA('hub')" aria-label="Ir al inicio">
+            <img src="imagenes/domino-d.png" alt="" class="brand-icon" width="34" height="35">
+            <span class="brand-name"><b>DOMino</b><small>Profesional</small></span>
+        </a>
+        <button class="hamburger" id="hamburger" aria-label="Abrir menú">☰</button>
+    </div>
+
+    <nav class="menu" id="menu">
+        <button type="button" class="menu-cerrar" id="menu-cerrar">✕ Cerrar menú</button>
+        <a href="#" id="nav-hub" class="active" data-vista="hub" onclick="event.preventDefault(); navegarA('hub')">Inicio</a>
+        <a href="#" id="nav-expedientes" data-vista="expedientes" data-roles="senior,midsenior" onclick="event.preventDefault(); navegarA('expedientes')">Clientes</a>
+        <a href="#" id="nav-kanban" data-vista="kanban" data-roles="senior,midsenior" onclick="event.preventDefault(); navegarA('kanban')">Tareas</a>
+        <a href="#" id="nav-mis-tareas" data-vista="mis-tareas" data-roles="asistente" onclick="event.preventDefault(); navegarA('mis-tareas')">Mis Tareas</a>
+        <a href="#" id="nav-calendario" data-vista="calendario" onclick="event.preventDefault(); navegarA('calendario')">Calendario</a>
+        <a href="#" id="nav-chat" onclick="event.preventDefault(); abrirChat()">
+            Chat Interno
+            <span id="badge-chat" style="display:none">0</span>
+        </a>
+        <div class="user-profile"><span>Profesional</span></div>
+        <a href="#" id="nav-logout" onclick="event.preventDefault(); cerrarSesion()">Cerrar Sesión</a>
+    </nav>
+
+<div id="panel-chat" style="display:none; flex-direction: column; flex: 1; overflow: hidden;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3 style="font-size: 1rem;">Chat Interno</h3>
+        <div style="display: flex; gap: 8px;">
+            <button id="btn-limpiar-chat" onclick="event.stopPropagation(); limpiarChat()" class="btn-secundario" style="padding: 4px 10px; font-size: 0.75rem; display:none;">🗑 Limpiar</button>
+        
+            <button onclick="cerrarChat()" class="btn-secundario" style="padding: 4px 10px; font-size: 0.8rem;">← Volver</button>
+        </div>
+    </div>
+    <div id="lista-mensajes" style="flex: 1; overflow-y: auto; margin-bottom: 15px; display: flex; flex-direction: column; gap: 10px; min-height: 0;">
+    </div>
+    <div id="sugerencias-menciones" style="display: none; background: var(--bg-panel); border: 1px solid #2a2a35; border-radius: 8px; margin-bottom: 5px; overflow: hidden;">
+</div>
+    <div style="position: relative;">
+    <input type="text" id="input-mensaje" placeholder="Escribí un mensaje..." 
+        style="width: 100%; background: var(--bg-base); border: 1px solid #2a2a35; color: var(--text-main); padding: 8px 40px 8px 12px; border-radius: 20px; box-sizing: border-box;">
+    <button onclick="enviarMensaje()" 
+        style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--text-main); cursor: pointer; font-size: 1.1rem;">➤</button>
+</div>
+</div>
+
+</aside>
+
+<main class="main-content" id="main-content" style="display:none;">
+
+            <div id="vista-hub" class="vista">
+                <header class="hub-hero">
+                    <p class="eyebrow" id="hub-fecha"></p>
+                    <h1 id="hub-saludo">Hub de gestión</h1>
+                    <p class="hub-sub" id="hub-sub">Todo el estudio en un solo lugar: elegí una herramienta y entrás en un toque.</p>
+                </header>
+                <section class="hub-buscar" id="hub-buscar" aria-label="Buscar empresa">
+                    <label for="hub-q">Ir directo a una empresa</label>
+                    <input type="search" id="hub-q" placeholder="Escribí el nombre o el CUIT" autocomplete="off">
+                    <div class="hub-q-res" id="hub-q-res" aria-live="polite"></div>
+                </section>
+                <nav class="hub-atajos" id="hub-atajos" aria-label="Ir a una sección de Inicio"></nav>
+                <section class="hub-resumen" id="hub-resumen" aria-label="Resumen del día"></section>
+                <section class="hub-hoy">
+                    <div class="hub-hoy-head"><h2>Para hoy y los próximos días</h2><button class="btn-secundario" onclick="navegarA('calendario')">Ver calendario</button></div>
+                    <div class="task-list" id="hub-lista-hoy"><p class="vacio">Cargando…</p></div>
+                </section>
+                <div id="hub-grupos"></div>
+            </div>
+
+            <div id="vista-cartera" class="vista" style="display:none">
+                <header class="topbar">
+                    <h1>Administrar cartera</h1>
+                    <div class="topbar-right">
+                        <button class="btn-secundario" onclick="navegarA('expedientes')">← Clientes</button>
+                        <select id="selector-empresas-contador" class="mini-selector" aria-label="Filtrar clientes">
+                            <option value="todas">Todas las empresas</option>
+                            <option value="activo" selected>Solo activas</option>
+                            <option value="inactivo">Solo inactivas</option>
+                        </select>
+                        <button class="btn-primary" id="btn-nuevo-cliente">+ Nuevo Cliente</button>
+                    </div>
+                </header>
+
+                <div class="modal" id="modal-cliente">
+                    <div class="modal-content">
+                        <span class="close-modal" id="close-modal">&times;</span>
+                        <h3>Registrar Nuevo Cliente</h3>
+                        <form id="form-alta-cliente">
+                            <div class="form-group">
+                                <label>Nombre de la Empresa Cliente</label>
+                                <input type="text" id="client-name" required placeholder="Ej. Empresa Alfa S.A.">
+                            </div>
+                            <div class="form-group">
+                                <label>CUIT / Identificador</label>
+                                <input type="text" id="client-cuit" required placeholder="30-xxxxxxxx-x">
+                            </div>
+                            <div class="form-group">
+                                <label>ID de Usuario (email del cliente)</label>
+                                <input type="email" id="client-usuario-id" placeholder="cliente@email.com">
+                            </div>
+                            <button type="submit" class="btn-submit">Guardar Cliente</button>
+                        </form>
+                    </div>
+                </div>
+
+                <section class="client-board">
+                    <h2>Cartera de Clientes Activos</h2>
+                    <div class="client-list" id="client-list"></div>
+                </section>
+            </div>
+
+            <div id="vista-expedientes" class="vista" style="display:none">
+                <header class="topbar">
+                    <h1 id="titulo-expedientes">Clientes</h1>
+                    <div class="topbar-right">
+                        <button class="btn-secundario" id="btn-admin-cartera" onclick="navegarA('cartera')">Administrar cartera</button>
+                        <button class="btn-secundario" onclick="navegarA('hub')">← Inicio</button>
+                    </div>
+                </header>
+                <p class="hub-sub" id="expedientes-ayuda">Elegí la empresa para ver sus procesos y documentos.</p>
+                <input type="search" id="buscar-expediente" class="buscador" placeholder="Buscar por nombre o CUIT" aria-label="Buscar empresa">
+                <div class="exp-grid" id="lista-expedientes"></div>
+            </div>
+
+            <div id="vista-expediente" class="vista" style="display: none;">
+                <header class="topbar">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <button class="btn-secundario" id="btn-volver">← Volver</button>
+                        <button class="btn-home-mobile" onclick="navegarA('hub')">Inicio</button>
+                        <h1 id="titulo-expediente">Nombre del Cliente</h1>
+                    </div>
+                    <div class="topbar-right">
+                        <button class="btn-secundario" onclick="abrirBuzon()">Buzón documental</button>
+                        <button class="btn-primary" id="btn-nueva-tarea">+ Asignar Tarea</button>
+                    </div>
+                </header>
+
+                <div class="modal" id="modal-tarea">
+                    <div class="modal-content">
+                        <span class="close-modal" id="close-modal-tarea">&times;</span>
+                        <h3>Nueva Tarea Operativa</h3>
+                        <form id="form-alta-tarea">
+                            <div class="form-group">
+                                <label>Descripción del proceso (Ej. Liquidación IVA)</label>
+                                <input type="text" id="task-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Vencimiento / Plazo</label>
+                                <input type="date" id="task-date" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Área / Responsable</label>
+                                <select id="task-responsable" required>
+                                    <option value="" disabled selected>Selecciona un área...</option>
+                                    <option value="Impuestos">Impuestos</option>
+                                    <option value="Contabilidad">Contabilidad</option>
+                                    <option value="Sueldos">Sueldos (RRHH)</option>
+                                    <option value="Auditoría">Auditoría</option>
+                                    <option value="Dirección">Dirección</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="btn-submit">Guardar Tarea</button>
+                        </form>
+                    </div>
+                </div>
+
+                <section class="task-board" style="margin-top: 30px;">
+                    <h2>Procesos Activos</h2>
+                    <div class="task-list" id="lista-tareas-cliente">
+                        </div>
+                </section>
+            </div> 
+
+            <div id="vista-buzon" class="vista" style="display: none;">
+                <header class="topbar">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <button class="btn-secundario" id="btn-volver-buzon">← Volver al Expediente</button>
+                        <button class="btn-home-mobile" onclick="navegarA('hub')">Inicio</button>
+                        <h1 id="titulo-buzon">Buzón Documental</h1>
+                    </div>
+                </header>
+
+                <section class="upload-section" style="margin-top: 20px;">
+                    <div class="upload-card">
+                        <h3>Centralizar Documentación recibida</h3>
+                        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">Cargue Documentación recibida por otros medios (e-mail, papel, Whastapp).</p>
+                        
+                        <form id="form-subir-doc">
+                            <div class="form-group">
+                                <label>Destino / Categoría</label>
+                                <select id="doc-category" required>
+                                    <option value="" disabled selected>Selecciona un área...</option>
+                                    <option value="Impuestos">Facturas y Compras (Impuestos)</option>
+                                    <option value="RRHH">Altas, Bajas y Novedades (Sueldos)</option>
+                                    <option value="Legal">Contratos y Sociedades (Legal)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label>Archivo / Documento</label>
+                                <input type="file" id="doc-file" required style="padding: 10px; background: var(--bg-base); color: var(--text-main); border: 1px dashed var(--text-muted); cursor: pointer;">
+                            </div>
+                            <button type="submit" class="btn-primary" style="margin-top: 20px; width: 100%;">Subir y Centralizar</button>
+                        </form>
+                    </div>
+                </section>
+
+                <section class="upload-section" style="margin-top: 30px;">
+    <div class="upload-card" style="border-color: var(--verde-ok);">
+        <h3 style="color: var(--verde-ok);">Enviar Documentación al Cliente</h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">
+            Suba archivos que el cliente podrá descargar desde su portal (VEPs, balances, recibos, comunicaciones).
+        </p>
+        
+        <form id="form-enviar-cliente">
+            <div class="form-group">
+                <label>Tipo de Documento</label>
+                <select id="entrega-categoria" required>
+                    <option value="" disabled selected>Selecciona un tipo...</option>
+                    <option value="VEP">VEP</option>
+                    <option value="Balance">Balance</option>
+                    <option value="Recibo">Recibo de Sueldo</option>
+                    <option value="Comunicacion">Comunicación</option>
+                    <option value="Otro">Otro</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Archivo</label>
+                <input type="file" id="entrega-file" required style="padding: 10px; background: var(--bg-base); color: var(--text-main); border: 1px dashed var(--verde-ok); cursor: pointer;">
+            </div>
+            <button type="submit" class="btn-primary" style="margin-top: 20px; width: 100%; background: var(--verde-ok); color: var(--bg-base);">
+                Enviar al Cliente
+            </button>
+        </form>
+    </div>
+</section>
+
+                <section class="docs-board" style="margin-top: 30px;">
+                    <h2>Historial de Entregas</h2>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin: 15px 0;">
+        <select id="filtro-fecha" class="mini-selector">
+            <option value="reciente">Más reciente</option>
+            <option value="antiguo">Más antiguo</option>
+        </select>
+        <select id="filtro-area" class="mini-selector">
+            <option value="todas">Todas las áreas</option>
+            <option value="Impuestos">Impuestos</option>
+            <option value="RRHH">RRHH</option>
+            <option value="Legal">Legal</option>
+            <option value="Contabilidad">Contabilidad</option>
+            <option value="Auditoría">Auditoría</option>
+        </select>
+        <select id="filtro-estado" class="mini-selector">
+            <option value="todos">Todos los estados</option>
+            <option value="Pendiente de Procesar">Pendiente</option>
+            <option value="En Revisión">En Revisión</option>
+            <option value="En Proceso">En Proceso</option>
+            <option value="Proceso Completo/Finalizado">Finalizado</option>
+        </select>
+        <select id="filtro-asignacion" class="mini-selector">
+            <option value="todos">Todos</option>
+            <option value="asignado">Asignados a tarea</option>
+            <option value="sin_asignar">Sin asignar</option>
+        </select>
+    </div>
+                    <div class="doc-list" id="lista-documentos">
+                        </div>
+                </section>
+            </div>
+
+                <div class="modal" id="modal-estado">
+    <div class="modal-content">
+        <span class="close-modal" id="close-modal-estado">&times;</span>
+        <h3>Cambiar Estado</h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem;" id="titulo-tarea-modal"></p>
+        
+        <div id="opciones-estado" style="margin-top: 20px; display: flex; flex-direction: column; gap: 10px;">
+        </div>
+
+        <div id="campos-en-proceso" style="display: none; margin-top: 20px;">
+            <div class="form-group">
+                <label>Asignar a</label>
+                <select id="modal-responsable" class="mini-selector" style="width:100%">
+                    <option value="">Sin asignar</option>
+                    <option value="Asistente 1">Asistente 1</option>
+                    <option value="Asistente 2">Asistente 2</option>
+                    <option value="Profesional">Profesional</option>
+                </select>
+            </div>
+            <div class="form-group" style="margin-top: 15px;">
+                <label>Vencimiento (opcional)</label>
+                <input type="date" id="modal-vencimiento" style="background: var(--bg-base); border: 1px solid #2a2a35; color: var(--text-main); padding: 10px; border-radius: 6px; width: 100%;">
+            </div>
+        </div>
+
+        <button class="btn-primary" id="btn-confirmar-estado" style="width:100%; margin-top: 20px; display:none;">
+            Confirmar Cambio
+        </button>
+    </div>
+</div>
+
+        <div id="vista-kanban" class="vista" style="display: none;">
+    <header class="topbar">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <h1>Tareas</h1>
+        </div>
+        <div class="topbar-right"><button class="btn-secundario" onclick="navegarA('hub')">← Inicio</button>
+            <span style="color: var(--text-muted); font-size: 0.85rem;" id="kanban-ultima-actualizacion"></span>
+        </div>
+
+        
+    </header>
+    <div class="filtro-banner" id="filtro-banner-kanban" hidden><span>Mostrando solo las <b>tareas vencidas</b></span><button class="btn-secundario" onclick="quitarFiltroTareas()">Ver todas</button></div>
+
+    <div id="tablero-kanban" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 30px;">
+        <div class="kanban-columna" id="col-pendiente">
+            <h3 style="color: var(--rojo-alerta); margin-bottom: 15px;">Pendiente de Procesar</h3>
+            <div class="kanban-cards" id="cards-pendiente"></div>
+        </div>
+        <div class="kanban-columna" id="col-revision">
+            <h3 style="color: var(--ambar-espera); margin-bottom: 15px;">En Revisión</h3>
+            <div class="kanban-cards" id="cards-revision"></div>
+        </div>
+        <div class="kanban-columna" id="col-proceso">
+            <h3 style="color: var(--ambar-espera); margin-bottom: 15px;">En Proceso</h3>
+            <div class="kanban-cards" id="cards-proceso"></div>
+        </div>
+        <div class="kanban-columna" id="col-finalizado">
+            <h3 style="color: var(--verde-ok); margin-bottom: 15px;">Finalizado</h3>
+            <div class="kanban-cards" id="cards-finalizado"></div>
+        </div>
+    </div>
+</div>
+
+<div id="vista-mis-tareas" class="vista" style="display: none;">
+    <header class="topbar">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <h1>Mis Tareas</h1>
+        </div>
+        <div class="topbar-right"><button class="btn-secundario" onclick="navegarA('hub')">← Inicio</button>
+            <span style="color: var(--text-muted); font-size: 0.85rem;" id="mis-tareas-actualizacion"></span>
+        </div>
+    </header>
+    <div class="filtro-banner" id="filtro-banner-mis-tareas" hidden><span>Mostrando solo las <b>tareas vencidas</b></span><button class="btn-secundario" onclick="quitarFiltroTareas()">Ver todas</button></div>
+    <div style="margin-top: 30px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+        <div class="kanban-columna">
+            <h3 style="color: var(--rojo-alerta); margin-bottom: 15px;">Pendiente</h3>
+            <div id="mis-tareas-pendiente"></div>
+        </div>
+        <div class="kanban-columna">
+            <h3 style="color: var(--ambar-espera); margin-bottom: 15px;">En Proceso</h3>
+            <div id="mis-tareas-proceso"></div>
+        </div>
+        <div class="kanban-columna">
+            <h3 style="color: var(--verde-ok); margin-bottom: 15px;">Finalizado</h3>
+            <div id="mis-tareas-finalizado"></div>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modal-docs-tarea">
+    <div class="modal-content">
+        <span class="close-modal" id="close-modal-docs-tarea">&times;</span>
+        <h3 id="titulo-modal-docs-tarea">Documentos de la Tarea</h3>
+        <div id="lista-docs-tarea" style="margin-top: 20px;">
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="modal-accesos">
+    <div class="modal-content" style="width: 95%; max-width: 720px;">
+        <span class="close-modal" id="close-modal-accesos">&times;</span>
+        <h3 id="titulo-accesos">Accesos al portal</h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 5px;">Quiénes de esta empresa entran al portal y qué puede hacer cada uno. El titular (el correo de la ficha) siempre tiene todos los permisos.</p>
+        <div id="lista-accesos" style="margin-top: 16px;"></div>
+        <form id="form-acceso" class="eq-alta" style="margin-top: 18px;">
+            <h3>Agregar una persona de la empresa</h3>
+            <div class="eq-alta-campos">
+                <label>Nombre<input id="acc-nombre" required autocomplete="off" placeholder="Nombre y apellido"></label>
+                <label>Correo<input id="acc-email" type="email" required autocomplete="off" placeholder="correo@ejemplo.com"></label>
+            </div>
+            <div class="acc-perm" style="margin-bottom: 14px;">
+                <label><input type="checkbox" id="acc-subir" checked> Puede enviar documentos al estudio</label>
+                <label><input type="checkbox" id="acc-descargar"> Puede ver y descargar lo que entrega el estudio</label>
+            </div>
+            <button type="submit" class="btn-primary">Agregar y enviar acceso</button>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="modal-docs-disponibles">
+    <div class="modal-content" style="width: 95%; max-width: 800px; max-height: 90vh; overflow-y: auto;">
+        <span class="close-modal" id="close-modal-docs-disponibles">&times;</span>
+        <h3>Documentos Disponibles</h3>
+        <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 5px;">
+            Seleccioná los documentos a agregar a esta tarea.
+        </p>
+        <div id="lista-docs-disponibles" style="margin-top: 20px;">
+        </div>
+    </div>
+</div>
+
+
+
+<div class="modal" id="modal-docs-pendientes">
+    <div class="modal-content">
+        <span class="close-modal" id="close-modal-docs">&times;</span>
+        <h3>Documentos Pendientes de Procesar</h3>
+        <div id="lista-docs-pendientes" style="margin-top: 20px;"></div>
+    </div>
+</div>
+
+<div id="vista-calendario" class="vista" style="display:none">
+    <header class="topbar">
+        <h1>Calendario de vencimientos</h1>
+        <div class="topbar-right"><button class="btn-secundario" onclick="navegarA('hub')">← Inicio</button></div>
+    </header>
+    <div class="cal-nav">
+        <button class="btn-secundario" id="cal-prev" aria-label="Mes anterior">‹</button>
+        <h2 id="cal-titulo">Mes</h2>
+        <button class="btn-secundario" id="cal-next" aria-label="Mes siguiente">›</button>
+        <button class="btn-secundario" id="cal-hoy">Hoy</button>
+    </div>
+    <div class="cal-grid" id="cal-grid" role="grid"></div>
+    <section class="cal-dia"><h3 id="cal-dia-titulo">Elegí un día</h3><div class="task-list" id="cal-dia-lista"></div></section>
+</div>
+
+<div id="vista-herramientas" class="vista" style="display:none">
+    <header class="topbar">
+        <h1>Herramientas del estudio</h1>
+        <div class="topbar-right"><button class="btn-secundario" onclick="navegarA('hub')">← Inicio</button></div>
+    </header>
+    <p class="hub-sub">Utilidades de uso diario. Funcionan en el dispositivo: no guardan ni envían los datos que cargás.</p>
+    <div class="tools-grid">
+        <section class="tool-card" id="tool-cuit">
+            <h3>Validador de CUIT / CUIL</h3>
+            <p class="hub-sub">Controla que el número esté bien formado (dígito verificador) y qué tipo de persona indica el prefijo.</p>
+            <label for="cuit-in">Número</label>
+            <input type="text" id="cuit-in" inputmode="numeric" placeholder="30-12345678-9" autocomplete="off">
+            <div class="tool-out" id="cuit-out" aria-live="polite"></div>
+        </section>
+        <section class="tool-card" id="tool-iva">
+            <h3>Calculadora de IVA</h3>
+            <p class="hub-sub">Pasá de neto a total o de total a neto, con la alícuota que corresponda.</p>
+            <label for="iva-monto">Importe</label>
+            <input type="number" id="iva-monto" step="0.01" min="0" placeholder="0,00">
+            <label for="iva-alicuota">Alícuota</label>
+            <select id="iva-alicuota"><option value="21">21 %</option><option value="10.5">10,5 %</option><option value="27">27 %</option><option value="0">Exento / 0 %</option></select>
+            <div class="seg" role="group" aria-label="Tipo de importe">
+                <button type="button" class="btn-primary" id="iva-neto">Es neto</button>
+                <button type="button" class="btn-secundario" id="iva-total">Es total</button>
+            </div>
+            <div class="tool-out" id="iva-out" aria-live="polite"></div>
+        </section>
+        <section class="tool-card" id="tool-hoja">
+            <h3>Hoja unificada A4</h3>
+            <p class="hub-sub">Frente y dorso de un documento (DNI, por ejemplo) en una sola hoja, lista para imprimir o guardar como imagen.</p>
+            <label for="hoja-frente">Frente</label>
+            <input type="file" id="hoja-frente" accept="image/*">
+            <label for="hoja-dorso">Dorso</label>
+            <input type="file" id="hoja-dorso" accept="image/*">
+            <canvas id="hoja-canvas" width="595" height="842" aria-label="Vista previa de la hoja A4"></canvas>
+            <div class="seg">
+                <button type="button" class="btn-primary" id="hoja-descargar">Guardar imagen</button>
+                <button type="button" class="btn-secundario" id="hoja-imprimir">Imprimir</button>
+                <button type="button" class="btn-baja" id="hoja-limpiar">Limpiar imágenes</button>
+            </div>
+        </section>
+        <section class="tool-card tool-ancha" id="tool-pdf">
+            <h3>Unificador de archivos en PDF</h3>
+            <p class="hub-sub">Fotos, PDF, Word y Excel en un solo PDF, en el orden que elijas. Se arma en este dispositivo: no se sube nada a ningún servidor.</p>
+            <div class="seg">
+                <label class="btn-primary pdf-btn">Elegir archivos<input type="file" id="pdf-archivos" accept="image/*,application/pdf,.pdf,.docx,.doc,.xlsx,.xls,.csv" multiple hidden></label>
+                <label class="btn-secundario pdf-btn">Sacar una foto<input type="file" id="pdf-camara" accept="image/*" capture="environment" hidden></label>
+            </div>
+            <small class="hub-sub">Se pueden unir fotos, PDF, Word (.docx) y Excel (.xlsx, .xls, .csv). PowerPoint, ZIP y audio no se pueden unir: conviene exportarlos a PDF desde su programa.</small>
+            <div class="tool-out" id="pdf-aviso" aria-live="polite"></div>
+            <div id="pdf-lista-wrap" hidden>
+                <div class="pdf-cab"><b id="pdf-cuenta"></b><button type="button" class="btn-baja" id="pdf-limpiar">Vaciar lista</button></div>
+                <div class="pdf-lista" id="pdf-lista"></div>
+                <label for="pdf-nombre">Nombre del PDF</label>
+                <input type="text" id="pdf-nombre" autocomplete="off" placeholder="Ej.: Documentación Rojas">
+                <div class="seg"><button type="button" class="btn-primary" id="pdf-generar">Generar PDF</button></div>
+                <div class="tool-out" id="pdf-nota" aria-live="polite"></div>
+            </div>
+            <div class="pdf-res" id="pdf-resultado" hidden>
+                <b>✓ PDF listo</b><span id="pdf-res-nombre"></span><small id="pdf-res-info"></small>
+                <div class="seg"><button type="button" class="btn-primary" id="pdf-guardar">Guardar</button><button type="button" class="btn-secundario" id="pdf-compartir">Compartir</button></div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<div id="vista-equipo" class="vista" style="display:none">
+    <header class="topbar">
+        <h1>Equipo del estudio</h1>
+        <div class="topbar-right"><button class="btn-secundario" onclick="navegarA('hub')">← Inicio</button></div>
+    </header>
+    <p class="hub-sub">Quiénes trabajan en el estudio y con qué nivel. Para sumar a alguien: cargá sus datos y la persona recibe un correo para crear su propia clave.</p>
+    <form id="form-alta-persona" class="eq-alta">
+        <h3>Agregar una persona</h3>
+        <div class="eq-alta-campos">
+            <label>Nombre<input id="persona-nombre" required autocomplete="off" placeholder="Nombre y apellido"></label>
+            <label>Correo<input id="persona-email" type="email" required autocomplete="off" placeholder="correo@ejemplo.com"></label>
+            <label>Nivel<select id="persona-nivel"><option value="asistente">Asistente</option><option value="midsenior">Profesional Mid Senior</option><option value="senior">Profesional Senior</option></select></label>
+        </div>
+        <button type="submit" class="btn-primary">Agregar y enviar acceso</button>
+    </form>
+    <div class="task-list" id="lista-equipo"></div>
+</div>
+
+<footer class="firma">Desarrollado por The DOM Studio Web · WhatsApp 261-3431216 · thedomstudioweb@gmail.com</footer>
+</main>
+</div>
+    <script src="atras.js"></script>
+    <script type="module" src="app.js"></script>
+    <script src="actividades-datos.js"></script>
+    <script src="modulos.js"></script>
+    <script src="proximamente.js"></script>
+    <script type="module" src="hub.js"></script>
+    <script type="module" src="bienestar.js"></script>
+    <script type="module" src="pdfunif.js"></script>
+    <script>
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').catch(function () {});
+    }
+</script>
+</body>
+</html>

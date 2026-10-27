@@ -1,0 +1,493 @@
+{
+ "version": 1,
+ "actividades": [
+  {
+   "id": "gimnasio",
+   "nombre": "Gimnasio y musculación",
+   "texto": "Sala de musculación, planes mensuales y evaluaciones.",
+   "persona": "socio",
+   "recurso": {
+    "nombre": "Evaluación física",
+    "tipo": "profesional"
+   },
+   "servicios": [
+    {
+     "nombre": "Evaluación física inicial",
+     "duracion_min": 60
+    },
+    {
+     "nombre": "Plan de entrenamiento personalizado",
+     "duracion_min": 60
+    },
+    {
+     "nombre": "Entrenamiento personal",
+     "duracion_min": 60
+    }
+   ],
+   "horarios": [
+    {
+     "dias": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "desde": "09:00",
+     "hasta": "13:00"
+    },
+    {
+     "dias": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "desde": "16:00",
+     "hasta": "20:00"
+    }
+   ]
+  },
+  {
+   "id": "clases",
+   "nombre": "Clases grupales",
+   "texto": "Funcional, spinning, zumba y otras clases con cupos.",
+   "persona": "alumno",
+   "clases": [
+    {
+     "nombre": "Funcional",
+     "cupo": 15,
+     "duracion_min": 60,
+     "sala": "Sala funcional",
+     "horarios": [
+      {
+       "dias": [
+        1,
+        3,
+        5
+       ],
+       "desde": "08:00",
+       "hasta": "09:00"
+      },
+      {
+       "dias": [
+        1,
+        3,
+        5
+       ],
+       "desde": "19:00",
+       "hasta": "20:00"
+      }
+     ]
+    },
+    {
+     "nombre": "Spinning",
+     "cupo": 20,
+     "duracion_min": 60,
+     "sala": "Sala de spinning",
+     "horarios": [
+      {
+       "dias": [
+        2,
+        4
+       ],
+       "desde": "08:00",
+       "hasta": "09:00"
+      },
+      {
+       "dias": [
+        1,
+        2,
+        3,
+        4,
+        5
+       ],
+       "desde": "20:00",
+       "hasta": "21:00"
+      }
+     ]
+    },
+    {
+     "nombre": "Zumba",
+     "cupo": 25,
+     "duracion_min": 60,
+     "sala": "Salón de baile",
+     "horarios": [
+      {
+       "dias": [
+        2,
+        4
+       ],
+       "desde": "19:00",
+       "hasta": "20:00"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "yoga",
+   "nombre": "Yoga y pilates",
+   "texto": "Clases de yoga, pilates y estiramiento con cupos reducidos.",
+   "persona": "alumno",
+   "clases": [
+    {
+     "nombre": "Yoga",
+     "cupo": 12,
+     "duracion_min": 60,
+     "sala": "Sala de yoga",
+     "horarios": [
+      {
+       "dias": [
+        1,
+        3
+       ],
+       "desde": "09:00",
+       "hasta": "10:00"
+      },
+      {
+       "dias": [
+        2,
+        4
+       ],
+       "desde": "19:00",
+       "hasta": "20:00"
+      }
+     ]
+    },
+    {
+     "nombre": "Pilates",
+     "cupo": 8,
+     "duracion_min": 60,
+     "sala": "Sala de pilates",
+     "horarios": [
+      {
+       "dias": [
+        1,
+        3,
+        5
+       ],
+       "desde": "10:00",
+       "hasta": "11:00"
+      },
+      {
+       "dias": [
+        2,
+        4
+       ],
+       "desde": "18:00",
+       "hasta": "19:00"
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "id": "spa",
+   "nombre": "Spa y masajes",
+   "texto": "Masajes, circuitos de spa y tratamientos corporales.",
+   "persona": "cliente",
+   "recurso": {
+    "nombre": "Masajista",
+    "tipo": "profesional"
+   },
+   "servicios": [
+    {
+     "nombre": "Masaje descontracturante",
+     "duracion_min": 60
+    },
+    {
+     "nombre": "Masaje relajante",
+     "duracion_min": 60
+    },
+    {
+     "nombre": "Drenaje linfático",
+     "duracion_min": 60
+    },
+    {
+     "nombre": "Masaje con piedras calientes",
+     "duracion_min": 90
+    }
+   ],
+   "horarios": [
+    {
+     "dias": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "desde": "10:00",
+     "hasta": "13:00"
+    },
+    {
+     "dias": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "desde": "15:00",
+     "hasta": "20:00"
+    }
+   ]
+  },
+  {
+   "id": "peluqueria",
+   "nombre": "Peluquería",
+   "texto": "Cortes, color, brushing y peinados.",
+   "persona": "cliente",
+   "recurso": {
+    "nombre": "Peluquero/a",
+    "tipo": "profesional"
+   },
+   "servicios": [
+    {
+     "nombre": "Corte",
+     "duracion_min": 30
+    },
+    {
+     "nombre": "Corte y brushing",
+     "duracion_min": 60
+    },
+    {
+     "nombre": "Color",
+     "duracion_min": 120
+    },
+    {
+     "nombre": "Mechas o balayage",
+     "duracion_min": 180
+    },
+    {
+     "nombre": "Peinado para evento",
+     "duracion_min": 60
+    }
+   ],
+   "horarios": [
+    {
+     "dias": [
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "desde": "09:00",
+     "hasta": "13:00"
+    },
+    {
+     "dias": [
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "desde": "15:00",
+     "hasta": "20:00"
+    }
+   ]
+  },
+  {
+   "id": "barberia",
+   "nombre": "Barbería",
+   "texto": "Cortes y arreglo de barba.",
+   "persona": "cliente",
+   "recurso": {
+    "nombre": "Barbero",
+    "tipo": "profesional"
+   },
+   "servicios": [
+    {
+     "nombre": "Corte de pelo",
+     "duracion_min": 30
+    },
+    {
+     "nombre": "Corte y barba",
+     "duracion_min": 60
+    },
+    {
+     "nombre": "Arreglo de barba",
+     "duracion_min": 30
+    }
+   ],
+   "horarios": [
+    {
+     "dias": [
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "desde": "10:00",
+     "hasta": "13:00"
+    },
+    {
+     "dias": [
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "desde": "15:00",
+     "hasta": "20:00"
+    }
+   ]
+  },
+  {
+   "id": "unas",
+   "nombre": "Uñas",
+   "texto": "Manicuría, esmaltado semipermanente y esculpidas.",
+   "persona": "cliente",
+   "recurso": {
+    "nombre": "Manicura",
+    "tipo": "profesional"
+   },
+   "servicios": [
+    {
+     "nombre": "Manicuría",
+     "duracion_min": 60
+    },
+    {
+     "nombre": "Esmaltado semipermanente",
+     "duracion_min": 60
+    },
+    {
+     "nombre": "Uñas esculpidas",
+     "duracion_min": 120
+    },
+    {
+     "nombre": "Pedicuría",
+     "duracion_min": 60
+    }
+   ],
+   "horarios": [
+    {
+     "dias": [
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "desde": "09:00",
+     "hasta": "13:00"
+    },
+    {
+     "dias": [
+      2,
+      3,
+      4,
+      5,
+      6
+     ],
+     "desde": "15:00",
+     "hasta": "19:00"
+    }
+   ]
+  },
+  {
+   "id": "estetica",
+   "nombre": "Estética y depilación",
+   "texto": "Limpiezas faciales, depilación, pestañas y cejas.",
+   "persona": "cliente",
+   "recurso": {
+    "nombre": "Esteticista",
+    "tipo": "profesional"
+   },
+   "servicios": [
+    {
+     "nombre": "Limpieza facial",
+     "duracion_min": 60
+    },
+    {
+     "nombre": "Depilación definitiva",
+     "duracion_min": 30
+    },
+    {
+     "nombre": "Perfilado de cejas",
+     "duracion_min": 30
+    },
+    {
+     "nombre": "Lifting de pestañas",
+     "duracion_min": 60
+    }
+   ],
+   "horarios": [
+    {
+     "dias": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "desde": "10:00",
+     "hasta": "13:00"
+    },
+    {
+     "dias": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "desde": "15:00",
+     "hasta": "19:00"
+    }
+   ]
+  },
+  {
+   "id": "consultorio",
+   "nombre": "Nutrición y kinesiología",
+   "texto": "Consultas individuales de nutrición, kinesiología o entrenamiento terapéutico.",
+   "persona": "paciente",
+   "recurso": {
+    "nombre": "Profesional de salud",
+    "tipo": "profesional"
+   },
+   "servicios": [
+    {
+     "nombre": "Consulta nutricional",
+     "duracion_min": 60
+    },
+    {
+     "nombre": "Sesión de kinesiología",
+     "duracion_min": 60
+    },
+    {
+     "nombre": "Control de seguimiento",
+     "duracion_min": 30
+    }
+   ],
+   "horarios": [
+    {
+     "dias": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "desde": "09:00",
+     "hasta": "13:00"
+    },
+    {
+     "dias": [
+      1,
+      3,
+      5
+     ],
+     "desde": "16:00",
+     "hasta": "19:00"
+    }
+   ]
+  }
+ ]
+}

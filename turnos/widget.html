@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Turnos de hoy</title><meta name="theme-color" content="#0A0A0A">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Montserrat:wght@400;500;600;700&display=swap">
+<style>
+:root{--bg:#0A0A0A;--pn:#16181C;--tx:#F4F1EA;--mut:#b9b4a4;--gold:#D4AF37;--line:#2c2f36;--ok:#4CC38A;--warn:#E8C766}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.4 Montserrat,system-ui,sans-serif;padding:0 max(16px,env(safe-area-inset-right)) 0 max(16px,env(safe-area-inset-left))}
+.w{max-width:520px;margin:0 auto;padding:max(16px,env(safe-area-inset-top)) 0 28px}
+h1{font:700 20px Cinzel,serif;color:var(--gold);margin:0}h2{font:600 13px Montserrat;letter-spacing:.12em;text-transform:uppercase;color:var(--mut);margin:20px 0 8px}
+.top{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.top small{color:var(--mut)}
+.prox{background:var(--pn);border:1px solid var(--gold);border-radius:4px;padding:14px;margin-top:14px}.prox b{font:700 30px Cinzel,serif;color:var(--gold);display:block}
+.cifras{display:flex;gap:8px;margin-top:10px}.cifras div{flex:1;background:var(--pn);border:1px solid var(--line);border-radius:4px;padding:8px;text-align:center}.cifras b{display:block;font:700 22px Cinzel,serif}.cifras span{font-size:12px;color:var(--mut)}
+.f{display:grid;grid-template-columns:56px 1fr auto;gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid var(--line)}.f b{font-weight:700}.f small{display:block;color:var(--mut)}
+.p{font-size:12px;border:1px solid var(--line);border-radius:99px;padding:2px 8px;color:var(--mut);white-space:nowrap}.p.pc{border-color:var(--warn);color:var(--warn)}.p.ok{border-color:var(--ok);color:var(--ok)}
+.vacio{color:var(--mut);font-style:italic;padding:8px 0}
+input,button{font:inherit;min-height:48px;border-radius:4px;border:1px solid var(--line);background:var(--pn);color:var(--tx);padding:0 12px;width:100%}button{background:var(--gold);color:#0A0A0A;font-weight:700;border:0;margin-top:8px;cursor:pointer}
+.err{border-left:3px solid #FF6B61;background:var(--pn);padding:10px 12px;margin-top:12px}
+footer{margin-top:28px;text-align:center;color:var(--mut);font-size:12px;border-top:1px solid var(--line);padding-top:12px}
+</style></head><body><div class="w" id="m"></div>
+<footer class="w">Desarrollado por The DOM Studio Web · WhatsApp 261-3431216 · thedomstudioweb@gmail.com</footer>
+<script src="config.js"></script>
+<script>
+const $ = s => document.querySelector(s), E = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const M = $('#m'); let KEY = ''; try { KEY = localStorage.getItem('turnos_widget_key') || ''; } catch (e) {}
+const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'], corta = f => { const d = new Date(f + 'T12:00:00'); return DIAS[d.getDay()] + ' ' + d.getDate() + '/' + (d.getMonth() + 1); };
+function pedirClave(msg) {
+  M.innerHTML = `<h1>Turnos de hoy</h1><p style="color:var(--mut)">Pegue la clave del widget (la que muestra Apps Script al ejecutar «prepararWidget»). Se guarda solo en este teléfono.</p>${msg ? `<div class="err">${E(msg)}</div>` : ''}<input id="k" type="password" autocomplete="off" placeholder="Clave del widget"><button id="ok">Guardar y ver</button>`;
+  $('#ok').onclick = () => { KEY = $('#k').value.trim(); try { localStorage.setItem('turnos_widget_key', KEY); } catch (e) {} cargar(); };
+}
+async function cargar() {
+  if (!KEY) return pedirClave();
+  try {
+    const r = await fetch(window.TURNOS_API + '?action=widget&key=' + encodeURIComponent(KEY)), w = await r.json();
+    if (!w.ok) { if (w.error === 'sin_autorizacion') { try { localStorage.removeItem('turnos_widget_key'); } catch (e) {} KEY = ''; return pedirClave('La clave no es correcta.'); } throw 0; }
+    pintar(w);
+  } catch (e) { if (!M.querySelector('.f,.prox')) M.innerHTML = '<h1>Turnos de hoy</h1><div class="err">No se pudo actualizar. Se reintenta solo.</div>'; }
+}
+const fila = (t, conDia) => `<div class="f"><b>${E(t.hora)}${conDia ? `<small>${E(corta(t.fecha))}</small>` : ''}</b><div>${E(t.nombre)}${t.mascota ? ' · ' + E(t.mascota) : ''}<small>${E(t.servicio)}${t.profesional ? ' · ' + E(t.profesional) : ''}</small></div><span class="p ${t.estado === 'Por confirmar' ? 'pc' : 'ok'}">${t.estado === 'Por confirmar' ? '! Por confirmar' : '✓ ' + E(t.estado)}</span></div>`;
+function pintar(w) {
+  const hora = new Date(w.generado).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+  M.innerHTML = `<div class="top"><h1>${E(w.negocio || 'Turnos')}</h1><small>act. ${E(hora)}</small></div>
+  ${w.proximo_turno ? `<div class="prox"><small style="color:var(--mut)">Próximo turno</small><b>${E(w.proximo_turno.hora)}</b>${E(w.proximo_turno.nombre)}${w.proximo_turno.mascota ? ' · ' + E(w.proximo_turno.mascota) : ''}<small style="display:block;color:var(--mut)">${E(w.proximo_turno.servicio)}</small></div>` : ''}
+  <div class="cifras"><div><b>${w.resumen.hoy}</b><span>hoy</span></div><div><b>${w.resumen.por_confirmar}</b><span>por confirmar</span></div><div><b>${w.resumen.atendidos_hoy}</b><span>atendidos</span></div></div>
+  <h2>Hoy</h2>${w.turnos_hoy.length ? w.turnos_hoy.map(t => fila(t)).join('') : '<div class="vacio">No hay turnos para hoy.</div>'}
+  <h2>Solicitudes por confirmar</h2>${w.por_confirmar.length ? w.por_confirmar.map(t => fila(t, true)).join('') : '<div class="vacio">Ninguna pendiente.</div>'}
+  <h2>Novedades (48 h)</h2>${w.novedades.length ? w.novedades.map(t => fila(t, true)).join('') : '<div class="vacio">Sin novedades.</div>'}`;
+}
+cargar(); setInterval(() => { if (!document.hidden && KEY) cargar(); }, 60000); document.addEventListener('visibilitychange', () => { if (!document.hidden && KEY) cargar(); });
+</script></body></html>

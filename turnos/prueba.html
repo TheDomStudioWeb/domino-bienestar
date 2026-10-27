@@ -1,0 +1,29 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Prueba del servicio de Turnos</title>
+<style>body{background:#0A0A0A;color:#F4F1EA;font:16px/1.5 system-ui,sans-serif;margin:0;padding:16px}h1{font-size:20px;color:#D4AF37}button{background:#D4AF37;border:0;border-radius:4px;padding:14px 18px;font:700 16px system-ui;min-height:52px;width:100%}pre{background:#16181C;border-left:3px solid #D4AF37;padding:12px;white-space:pre-wrap;word-break:break-word;font-size:14px}.ok{color:#4CC38A}.mal{color:#FF6B61}</style></head><body>
+<h1>Prueba del servicio de Turnos</h1><p>Mide la velocidad y verifica la doble reserva simultánea contra el servicio real. Crea y cancela turnos de ejemplo.</p>
+<button id="go">Ejecutar prueba</button><pre id="o">Esperando…</pre>
+<script src="config.js"></script>
+<script type="module">
+import { llamar } from './api.js';
+const o = document.getElementById('o'); const L = (t, c) => { o.innerHTML += '\n' + (c ? `<span class="${c}">${t}</span>` : t); };
+const cron = async f => { const t = performance.now(); const r = await f(); return [r, Math.round(performance.now() - t)]; };
+document.getElementById('go').onclick = async () => {
+  o.textContent = 'Corriendo…'; document.getElementById('go').disabled = true;
+  try {
+    let [r, ms] = await cron(() => llamar('inicio')); L(`1. Apertura de la página (config + horarios en una llamada): ${r.ok ? 'sí' : 'NO (' + r.error + ')'} · ${ms} ms`, r.ok ? 'ok' : 'mal'); if (!r.ok) throw 0;
+    const s = r.servicios[0]; const hoy = new Date(); const d0 = hoy.toISOString().slice(0, 10);
+    [r, ms] = await cron(() => llamar('horarios_libres', { servicio_id: s.id, desde: d0, dias: 14 })); L(`2. Horarios libres: ${r.ok ? r.dias.length + ' días con lugar' : 'NO (' + r.error + ')'} · ${ms} ms`, r.ok ? 'ok' : 'mal'); if (!r.ok || !r.dias.length) throw 0;
+    const dia = r.dias[r.dias.length - 1], rec = Object.keys(dia.recursos)[0], hora = dia.recursos[rec][dia.recursos[rec].length - 1];
+    L(`3. Dos personas piden a la vez ${dia.fecha} ${hora} (${rec})…`);
+    const base = { servicio_id: s.id, recurso_id: rec, fecha: dia.fecha, hora, email: '', consentimiento: true, sujeto_nombre: 'PRUEBA', sujeto_tipo: 'Perro' };
+    const [res, ms2] = await cron(() => Promise.all([llamar('reservar', { ...base, nombre: 'Prueba Uno', tel: '2610000001' }), llamar('reservar', { ...base, nombre: 'Prueba Dos', tel: '2610000002' })]));
+    const buenas = res.filter(x => x.ok), malas = res.filter(x => !x.ok);
+    const pasa = buenas.length === 1 && malas.length === 1 && ['horario_ocupado', 'sistema_ocupado'].includes(malas[0].error);
+    L(`   Resultado: ${buenas.length} aceptada, ${malas.length} rechazada (${malas.map(m => m.error).join(', ') || '-'}) · ${ms2} ms`, pasa ? 'ok' : 'mal');
+    L(pasa ? '   ✓ DOBLE RESERVA BLOQUEADA' : '   ✗ FALLÓ LA PRUEBA: se aceptaron ' + buenas.length, pasa ? 'ok' : 'mal');
+    for (const b of buenas) { const [c, ms3] = await cron(() => llamar('cancelar_turno', { codigo: b.codigo })); L(`4. Cancelar turno de prueba: ${c.ok ? 'liberado' : c.error} · ${ms3} ms`, c.ok ? 'ok' : 'mal'); }
+    L('\nListo. Copie este texto y envíemelo.');
+  } catch (e) { L('Se detuvo la prueba.', 'mal'); }
+  document.getElementById('go').disabled = false;
+};
+</script></body></html>

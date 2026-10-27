@@ -1,0 +1,514 @@
+/* PALETA DE COLORES PREMIUM-NOIR */
+:root {
+    /* Kit de marca The DOM Studio Web: Premium-Noir */
+    --bg-base: #0a0a0a;
+    --bg-panel: #16181c;
+    --bg-hover: #1f2227;
+    --text-main: #f4f1ea;
+    --text-muted: #a8a396;
+    --gold: #d4af37;
+    --gold-light: #e8c766;
+    --bronze: #9e7535;
+    --hairline: #d4af3740;
+    --line: #2a2d33;
+    --on-gold: #0a0a0a;
+    --process: #22d3ee;
+    /* Estados: siempre acompañados de texto */
+    --rojo-alerta: #ff6b61;
+    --verde-ok: #4cc38a;
+    --ambar-espera: #e8c766;
+    --font-display: "Cinzel", "Trajan Pro", Georgia, serif;
+    --font-sans: "Montserrat", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box; /* Clave para que los anchos no se rompan */
+    font-family: var(--font-sans);
+}
+
+body {
+    background-color: var(--bg-base);
+    color: var(--text-main);
+    overflow-x: hidden;
+    max-width:100vw;
+}
+
+/* ESTRUCTURA PRINCIPAL (Grid) */
+.app-container {
+    display: grid;
+    grid-template-columns: 250px 1fr; 
+    min-height: 100vh;
+    min-width:100vw;
+    overflow-x: hidden;
+}
+
+/* =========================================
+   BARRA LATERAL Y MENÚ PRINCIPAL
+   ========================================= */
+.sidebar {
+    background-color: var(--bg-panel);
+    padding: 20px;
+    border-right: 1px solid var(--line);
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    position: sticky;
+    top: 0;
+}
+
+.brand-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 40px;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-icon {
+    width: 28px;
+    height: auto;
+    display: block;
+}
+
+.logo-container h2 {
+    font-weight: 600;
+    letter-spacing: 2px;
+}
+
+/* Enlaces del menú (Esto mata el link azul) */
+.menu a {
+    display: block;
+    color: var(--text-muted);
+    text-decoration: none;
+    padding: 12px 15px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    transition: 0.3s ease;
+}
+
+.menu a:hover, .menu a.active {
+    background-color: var(--bg-hover);
+    color: var(--text-main);
+}
+
+/* Botón hamburguesa (Se oculta en la PC) */
+.hamburger {
+    display: none;
+    background: none;
+    border: none;
+    color: var(--text-main);
+    font-size: 1.8rem;
+    cursor: pointer;
+}
+
+/* CONTENIDO PRINCIPAL */
+.main-content {
+    padding: 30px;
+    overflow-y: auto;
+}
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 20px; /* Separación limpia entre el botón y el nombre */
+}
+
+    .client-board {
+    margin-bottom: 25px;
+}
+
+/* KPIs GRID (Tarjetas superiores) */
+.kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 40px;
+}
+
+.kpi-card {
+    background-color: var(--bg-panel);
+    padding: 25px;
+    border-radius: 12px;
+    border: 1px solid var(--line);
+}
+
+.kpi-card h3 {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    font-weight: 400;
+}
+
+.kpi-card .numero {
+    font-size: 2.5rem;
+    font-weight: 600;
+    margin-top: 10px;
+}
+
+/* CLASES DE UTILIDAD (Colores de acento) */
+.text-rojo { color: var(--rojo-alerta); }
+.text-ambar { color: var(--ambar-espera); }
+.text-verde { color: var(--verde-ok); }
+.border-rojo { border-left: 4px solid var(--rojo-alerta); }
+
+/* LISTA DE TAREAS */
+.task-item {
+    background-color: var(--bg-panel);
+    padding: 20px;
+    border-radius: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 15px;
+}
+
+.btn-action {
+    background-color: transparent;
+    color: var(--text-main);
+    border: 1px solid var(--text-muted);
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-action:hover {
+    background-color: var(--text-main);
+    color: var(--bg-base);
+}
+
+/* =========================================
+   MODAL Y FORMULARIOS (PREMIUM-NOIR)
+   ========================================= */
+.btn-primary {
+    background-color: var(--text-main);
+    color: var(--bg-base);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-primary:hover {
+    background-color: var(--text-muted);
+}
+
+.btn-secundario {
+    background-color: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--text-muted);
+    padding: 8px 15px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-secundario:hover {
+    color: var(--text-main);
+    border-color: var(--text-main);
+}
+
+.modal {
+    display: none; /* Oculto por defecto */
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); /* Oscurece el fondo */
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background-color: var(--bg-panel);
+    border: 1px solid var(--line);
+    padding: 30px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 450px;
+    position: relative;
+}
+
+.close-modal {
+    position: absolute;
+    right: 20px;
+    top: 15px;
+    color: var(--text-muted);
+    font-size: 1.5rem;
+    cursor: pointer;
+}
+
+.form-group {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+}
+
+.form-group input, .form-group select {
+    background-color: var(--bg-base);
+    border: 1px solid var(--line);
+    color: var(--text-main);
+    padding: 12px;
+    border-radius: 6px;
+    font-size: 1  rem;
+}
+
+.form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: var(--text-muted);
+}
+
+.btn-submit {
+    background-color: var(--text-main);
+    color: var(--bg-base);
+    border: none;
+    width: 100%;
+    padding: 12px;
+    margin-top: 25px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.client-board { margin-top: 40px; }
+.client-card {
+    background-color: var(--bg-panel);
+    padding: 15px 20px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 12px;
+}
+
+.btn-baja {
+    background: transparent;
+    border: 1px solid var(--rojo-alerta);
+    color: var(--rojo-alerta);
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-baja:hover {
+    background-color: var(--rojo-alerta);
+    color: white;
+}
+
+/* =========================================
+   BUZÓN DOCUMENTAL (UPLOAD)
+   ========================================= */
+.upload-card {
+    background-color: var(--bg-panel);
+    padding: 25px;
+    border-radius: 12px;
+    border: 1px dashed var(--line); /* Borde punteado clásico de zonas de subida */
+}
+
+.doc-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: var(--bg-base);
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid var(--text-muted); /* Gris por defecto, luego cambiaremos por color según estado */
+    margin-top: 10px;
+    border-top: 1px solid var(--line);
+    border-right: 1px solid var(--line);
+    border-bottom: 1px solid var(--line);
+}
+
+.doc-item h4 {
+    word-break: break-word;
+    max-width: 300px;
+}
+
+.mini-selector, .full-selector {
+    background: var(--bg-panel);
+    color: var(--text-main);
+    border: 1px solid var(--line);
+    padding: 8px 15px;
+    border-radius: 6px;
+    outline: none;
+    cursor: pointer;
+}
+
+.mini-selector:hover { border-color: var(--text-muted); }
+@media (max-width: 768px) {
+    .app-container {
+        grid-template-columns: 1fr;
+    }
+
+    .sidebar {
+        border-right: none;
+        border-bottom: 1px solid var(--line);
+        padding: 15px;
+        height: auto;
+    }
+
+    .brand p { margin-bottom: 15px; }
+
+    .hamburger {
+        display: block; 
+    }
+
+    .menu {
+        display: none; 
+        flex-direction: column;
+        margin-top: 15px;
+    }
+
+    .menu.show {
+        display: flex; 
+    }
+
+    .menu a {
+        white-space: normal; 
+        margin-right: 0;
+        margin-bottom: 10px;
+    }
+
+    .main-content {
+        padding: 15px; 
+        overflow-x: hidden; 
+    }
+
+    .topbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+
+    .topbar h1 {
+        font-size: 1.3rem; 
+    }
+
+    .kpi-grid {
+        grid-template-columns: 1fr; 
+        gap: 15px; 
+    }
+
+    .task-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .topbar-right {
+        flex-direction: row; 
+        align-items: space-between;
+        align-items: center;
+        width: 100%;
+        margin-top: 5px;
+    }
+    
+    .btn-primary {
+        width: auto;
+        padding: 8px 15px;
+        font-size: 0.9rem; 
+    }
+} 
+/* Por defecto, oculto */
+.btn-home-mobile {
+    display: none; 
+    background: none;
+    border: 1px solid var(--text-muted);
+    padding: 5px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+/* Solo aparece en celulares */
+@media (max-width: 768px) {
+    .btn-home-mobile {
+        display: block;
+    }
+}
+.btn-activar {
+    background: transparent;
+    border: 1px solid var(--verde-ok);
+    color: var(--verde-ok);
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.btn-activar:hover {
+    background-color: var(--verde-ok);
+    color: var(--bg-base);
+}
+
+.border-verde { border-left: 4px solid var(--verde-ok); }
+.border-ambar { border-left: 4px solid var(--ambar-espera); }
+
+/* =========================================
+   KANBAN
+   ========================================= */
+.kanban-columna {
+    background-color: var(--bg-panel);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid var(--line);
+    min-height: 300px;
+}
+
+.kanban-card {
+    background-color: var(--bg-base);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 10px;
+    border: 1px solid var(--line);
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.kanban-card:hover {
+    border-color: var(--text-muted);
+}
+
+.kanban-card h4 {
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+}
+
+.kanban-card p {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+    #tablero-kanban {
+        grid-template-columns: 1fr;
+    }
+    
+    .kanban-columna {
+        min-height: 150px;
+    }
+}

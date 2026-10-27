@@ -1,0 +1,16 @@
+{
+  "nombre": "Vita Aura (ejemplo)",
+  "rubro": "bienestar",
+  "logo": "logo.png",
+  "firebase": {
+    "apiKey": "PEGAR",
+    "authDomain": "PEGAR",
+    "projectId": "PEGAR",
+    "storageBucket": "PEGAR",
+    "messagingSenderId": "PEGAR",
+    "appId": "PEGAR",
+    "measurementId": ""
+  },
+  "turnos_url": "",
+  "documentos": false
+}
