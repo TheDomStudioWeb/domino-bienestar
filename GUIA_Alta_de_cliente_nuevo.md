@@ -12,7 +12,7 @@
 
 ## Paso 0 · Datos del cliente (5 min)
 Anotar antes de empezar:
-- Nombre del negocio (ej. «Veterinaria Pepe») y rubro (`veterinaria`, `contador` o `general`).
+- Nombre del negocio (ej. «Veterinaria Pepe» o «Vita Aura») y rubro (`bienestar`, `veterinaria`, `contador` o `general`). Con `bienestar`, la Dirección elige las actividades del negocio la primera vez que entra, y en el paso 6 se agrega la fila `actividades` en `config` y se ejecuta `cargarActividades` (ver LEEME.md).
 - Correo del dueño (será el usuario **Senior**).
 - Teléfono y correo de contacto del negocio.
 - **Logo del negocio en PNG** (idealmente con fondo transparente). Se muestra en el Hub y en el portal en lugar del de DOMino. En `alta/cliente.json` se indica en el campo `logo` (ruta al archivo). Sin logo, el Hub muestra la marca DOMino.
