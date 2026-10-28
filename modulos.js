@@ -53,14 +53,21 @@
         ['#modal-cliente .form-group:nth-child(3) label', 'Correo del socio (si va a usar el portal)'], ['#modal-cliente .btn-submit', 'Guardar socio'],
         ['.client-board h2', 'Cartera de socios'], ['#btn-admin-cartera', 'Administrar socios'],
         ['#persona-nivel option[value=asistente]', 'Recepción'], ['#persona-nivel option[value=midsenior]', 'Profesor/a o profesional'], ['#persona-nivel option[value=senior]', 'Dirección'],
-        ['#col-pendiente h3', 'Por hacer'], ['#col-revision h3', 'En revisión'], ['#col-proceso h3', 'En gestión'], ['#col-finalizado h3', 'Resuelto'],
+        ['#col-pendiente h3', 'Por hacer'], ['#col-proceso h3', 'En gestión'], ['#col-finalizado h3', 'Resuelto'],
         ['#vista-mis-tareas h1', 'Mis seguimientos'], ['#vista-mis-tareas .kanban-columna:nth-child(1) h3', 'Por hacer'], ['#vista-mis-tareas .kanban-columna:nth-child(2) h3', 'En gestión'], ['#vista-mis-tareas .kanban-columna:nth-child(3) h3', 'Resuelto'],
         ['#modal-tarea h3', 'Nuevo seguimiento'], ['#modal-tarea .form-group:nth-child(1) label', 'Qué hay que hacer (ej. avisar vencimiento de cuota)'], ['#modal-tarea .form-group:nth-child(2) label', 'Para cuándo'],
         ['#modal-tarea .form-group:nth-child(3) label', 'Quién se encarga'], ['#modal-tarea .btn-submit', 'Guardar seguimiento'], ['#btn-nueva-tarea', '+ Nuevo seguimiento'], ['#modal-estado h3', 'Cambiar estado del seguimiento']
       ],
       // Nombres de los estados de un seguimiento (el valor guardado no cambia; solo cómo se ve).
-      estados: { 'Pendiente de Procesar': 'Por hacer', 'Pendiente': 'Por hacer', 'En Revisión': 'En revisión', 'Solicitar Información': 'Esperando respuesta', 'En Proceso': 'En gestión', 'Procesado/Liquidado': 'Avisado', 'Proceso Completo/Finalizado': 'Resuelto' },
-      responsables: ['Recepción', 'Profesores', 'Administración', 'Dirección']
+      estados: { 'Pendiente de Procesar': 'Por hacer', 'Pendiente': 'Por hacer', 'En Revisión': 'Por hacer', 'Solicitar Información': 'En gestión', 'En Proceso': 'En gestión', 'Procesado/Liquidado': 'En gestión', 'Proceso Completo/Finalizado': 'Resuelto' },
+      responsables: ['Recepción', 'Profesores', 'Administración', 'Dirección'],
+      // Seguimientos en tres pasos: Por hacer → En gestión → Resuelto (sin «En revisión»).
+      sinRevision: true,
+      flujo: {
+        'Pendiente de Procesar': ['En Proceso', 'Proceso Completo/Finalizado'], 'Pendiente': ['En Proceso', 'Proceso Completo/Finalizado'],
+        'En Revisión': ['En Proceso', 'Proceso Completo/Finalizado'], 'Solicitar Información': ['En Proceso', 'Proceso Completo/Finalizado'],
+        'En Proceso': ['Proceso Completo/Finalizado'], 'Procesado/Liquidado': ['Proceso Completo/Finalizado'], 'Proceso Completo/Finalizado': []
+      }
     },
     // Veterinaria: dueños y mascotas, agenda de turnos, libreta sanitaria. Sin portal de documentos ni herramientas fiscales.
     veterinaria: {
@@ -118,6 +125,12 @@
     if (sr && P.responsables && !sr.dataset.rubro) { sr.dataset.rubro = '1'; sr.innerHTML = '<option value="" disabled selected>Elegí quién se encarga…</option>' + P.responsables.map((r) => '<option>' + r + '</option>').join(''); }
     const fe = document.getElementById('filtro-estado');
     if (fe && P.estados) fe.querySelectorAll('option').forEach((o) => { if (P.estados[o.value]) o.textContent = P.estados[o.value]; });
+    if (P.sinRevision) {
+      const cr = document.getElementById('col-revision'); if (cr) cr.style.display = 'none';
+      if (fe) fe.querySelectorAll('option[value="En Revisión"]').forEach((o) => o.remove());
+    }
+    const mr = document.getElementById('modal-responsable');
+    if (mr && P.responsables && !mr.dataset.rubro) { mr.dataset.rubro = '1'; mr.innerHTML = '<option value="">Sin cambiar</option>' + P.responsables.map((r) => '<option>' + r + '</option>').join(''); }
     document.querySelectorAll('h1').forEach((h) => { if (P.textos && P.textos.herr_titulo && /^Herramientas del estudio$/i.test(h.textContent.trim())) h.textContent = P.textos.herr_titulo; if (P.textos && P.textos.equipo_titulo && /^Equipo del estudio$/i.test(h.textContent.trim())) h.textContent = P.textos.equipo_titulo; });
   };
   window.DOMINO_CLIENTE = CLIENTE;

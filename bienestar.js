@@ -57,7 +57,7 @@ function asistente() {
   f.innerHTML = `<form class="bn-caja" id="bn-form" novalidate>
     <button type="button" class="bn-x" id="bn-x" aria-label="Cerrar">✕</button>
     <h2 id="bn-t">${primera ? 'Bienvenido a DOMino Bienestar' : 'Actividades del centro'}</h2>
-    <p>${primera ? 'Antes de empezar, cuéntenos sobre su centro. Son dos pasos y lo puede cambiar cuando quiera.' : 'Sume o quite actividades. Los datos que ya cargó no se borran.'}</p>
+    <p>${primera ? 'Antes de empezar, cuéntenos sobre su centro. Son dos pasos y lo puede cambiar cuando quiera.' : 'Sume o quite actividades. Los datos que ya cargó no se borran. Si suma una actividad nueva, The DOM Studio Web la deja lista en la agenda de turnos y en la página de reservas.'}</p>
     <label class="bn-l" for="bn-nombre">Nombre del centro</label>
     <input type="text" id="bn-nombre" maxlength="60" autocomplete="organization" placeholder="Ej. Vita Aura" value="${esc((negocio && negocio.nombre) || nombreInicial())}">
     <label class="bn-l" for="bn-tel">Teléfono o WhatsApp (se muestra en la página de reservas)</label>
@@ -100,12 +100,7 @@ function pintarPanel(abrirPasos) {
   } else {
     const acts = negocio.actividades || [];
     p.innerHTML = `<h2>${esc(negocio.nombre)}</h2><div class="bn-chips">${acts.map((a) => `<span class="bn-chip">${esc(nombreActividad(a))}</span>`).join('')}</div>
-    ${senior ? `<div class="bn-fila"><button type="button" class="bn-btn sec" id="bn-abrir">Cambiar actividades</button></div>
-    <details${abrirPasos ? ' open' : ''}><summary>Cómo activar las reservas de estas actividades</summary>
-      <p>Lo hace una sola vez la persona que administra la planilla de turnos (The DOM Studio Web puede hacerlo por usted):</p>
-      <ol style="margin:0 0 8px 18px;line-height:1.6"><li>En la planilla de turnos, hoja <b>config</b>, agregue esta fila (columna <b>clave</b> y columna <b>valor</b>):<code class="bn-code" id="bn-linea">${esc(lineaPlanilla(acts))}</code></li><li>En Apps Script, elija la función <b>cargarActividades</b> y toque <b>Ejecutar</b>.</li><li>Listo: aparecen los servicios, las clases con cupos y los horarios típicos. Después se ajustan precios, horarios y profesionales en la misma planilla.</li></ol>
-      <button type="button" class="bn-btn sec" id="bn-copiar">Copiar la fila</button></details>` : ''}`;
-    const c = $('bn-copiar'); if (c) c.onclick = async () => { try { await navigator.clipboard.writeText(lineaPlanilla(acts)); c.textContent = 'Copiado ✓'; } catch (e) { const r = document.createRange(); r.selectNodeContents($('bn-linea')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); c.textContent = 'Seleccionado: copie con su teléfono'; } };
+    ${senior ? `<div class="bn-fila"><button type="button" class="bn-btn sec" id="bn-abrir">Cambiar actividades</button></div>` : ''}`;
   }
   const a = $('bn-abrir'); if (a) a.onclick = asistente;
 }

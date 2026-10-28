@@ -575,7 +575,7 @@ window.abrirModalEstado = function(id, estadoActual, tituloTarea) {
     camposEnProceso.style.display = 'none';
     btnConfirmarEstado.style.display = 'none';
     
-    const siguientes = mapaEstados[estadoActual] || [];
+    const siguientes = (((window.DOMINO_PERFIL || {}).flujo) || mapaEstados)[estadoActual] || [];
     opcionesEstado.innerHTML = '';
     
     
@@ -606,11 +606,11 @@ btnConfirmarEstado.addEventListener('click', async () => {
     const vencimiento = document.getElementById('modal-vencimiento').value;
     const tareaRef = doc(db, "tasks", idTareaActiva);
     try {
-        await updateDoc(tareaRef, {
-            estado: estadoDestino,
-            responsable: responsable,
-            vencimiento: vencimiento
-        });
+        // Solo se cambian responsable y vencimiento si se completaron (antes se borraban al cambiar de estado)
+        const cambios = { estado: estadoDestino };
+        if (responsable) cambios.responsable = responsable;
+        if (vencimiento) cambios.vencimiento = vencimiento;
+        await updateDoc(tareaRef, cambios);
         modalEstado.style.display = 'none';
         idTareaActiva = null;
         cargarTareasDelCliente(idClienteActivo);
@@ -915,8 +915,8 @@ async function cargarKanban() {
     const columnas = {
         "Pendiente de Procesar": document.getElementById('cards-pendiente'),
         "Pendiente": document.getElementById('cards-pendiente'),
-        "En Revisión": document.getElementById('cards-revision'),
-        "Solicitar Información": document.getElementById('cards-revision'),
+        "En Revisión": document.getElementById(((window.DOMINO_PERFIL || {}).sinRevision) ? 'cards-pendiente' : 'cards-revision'),
+        "Solicitar Información": document.getElementById(((window.DOMINO_PERFIL || {}).sinRevision) ? 'cards-proceso' : 'cards-revision'),
         "En Proceso": document.getElementById('cards-proceso'),
         "Procesado/Liquidado": document.getElementById('cards-proceso'),
         "Proceso Completo/Finalizado": document.getElementById('cards-finalizado')
