@@ -1,7 +1,8 @@
 // DOMino Profesional · Hub de gestión
 // Inicio con accesos, expedientes, calendario, herramientas y equipo.
 // Usa la conexión a Firebase que arma app.js (window.DOMINO).
-import { collection, getDocs, query, where, addDoc, setDoc, doc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getDocs, query, where, addDoc, setDoc, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, doc, negocioActual } from "./tenant.js";
 
 const D = () => window.DOMINO;
 const esc = (v) => (D() ? D().esc(v) : String(v ?? ''));
@@ -43,7 +44,7 @@ const GRUPOS = [
   { titulo: 'Documentos', items: [
     { k: 'buzon', t: 'Buzón documental', d: 'Cargar lo recibido y enviar documentación al socio.', roles: ['senior', 'midsenior'], go: () => abrirExpedientes('buzon') },
     { k: 'pendientes', t: 'Documentos pendientes', d: 'Lo que subieron los socios y falta revisar.', roles: ['senior', 'midsenior'], badge: 'docs', go: () => abrirModalDocsPendientes() },
-    { k: 'portal', t: 'Portal del socio', d: 'Cómo ve y envía documentos el socio.', roles: ['senior', 'midsenior'], go: () => window.open('portal-cliente.html', '_blank', 'noopener') }
+    { k: 'portal', t: 'Portal del socio', d: 'Cómo ve y envía documentos el socio.', roles: ['senior', 'midsenior'], go: () => window.open('portal-cliente.html?n=' + encodeURIComponent(negocioActual()), '_blank', 'noopener') }
   ]},
   { titulo: 'Plazos y equipo', items: [
     { k: 'calendario', t: 'Calendario', d: 'Vencimientos del mes, día por día.', roles: ['senior', 'midsenior', 'asistente'], go: () => navegarA('calendario') },
@@ -62,7 +63,7 @@ const MODULOS = window.DOMINO_MODULOS || {};
 if (MODULOS.turnos) {
   GRUPOS.push({ titulo: 'Agenda y turnos', items: [
     { k: 'turnos', t: 'Agenda de turnos', d: 'Turnos del día, solicitudes por confirmar y avisos de mañana.', roles: ['senior', 'midsenior', 'asistente'], go: () => window.open('turnos/panel.html', '_blank', 'noopener') },
-    { k: 'reserva', t: 'Página de reserva', d: 'La página donde los socios reservan clases y turnos. Compártala por WhatsApp o redes.', roles: ['senior', 'midsenior', 'asistente'], go: () => window.open('turnos/reserva.html', '_blank', 'noopener') }
+    { k: 'reserva', t: 'Página de reserva', d: 'La página donde los socios reservan clases y turnos. Compártala por WhatsApp o redes.', roles: ['senior', 'midsenior', 'asistente'], go: () => window.open('turnos/reserva.html?n=' + encodeURIComponent(negocioActual()), '_blank', 'noopener') }
   ]});
 }
 // Perfil por rubro (modulos.js): oculta, renombra y ordena según lo que necesita cada rubro.
@@ -294,7 +295,7 @@ async function renderEquipo() {
   const cont = $('lista-equipo');
   cont.innerHTML = '<p class="vacio">Cargando…</p>';
   try {
-    const snap = await getDocs(collection(D().db, 'users'));
+    const snap = await getDocs(query(collection(D().db, 'users'), where('negocio_id', '==', negocioActual())));
     equipoCache = [];
     snap.forEach((u) => equipoCache.push({ id: u.id, ...u.data() }));
     const orden = { senior: 0, midsenior: 1, asistente: 2 };
@@ -346,7 +347,7 @@ document.addEventListener('submit', async (e) => {
   if (equipoCache.some((u) => String(u.email).toLowerCase() === email)) { D().aviso('Ese correo ya está cargado en el equipo.', 'error'); return; }
   const btn = e.target.querySelector('button[type=submit]'); btn.disabled = true;
   try {
-    await setDoc(doc(D().db, 'users', email), { email, nombre_display: nombre, rol_jerarquia: nivel, activo: true, creado: serverTimestamp() });
+    await setDoc(doc(D().db, 'users', email), { email, nombre_display: nombre, rol_jerarquia: nivel, activo: true, negocio_id: negocioActual(), creado: serverTimestamp() });
   } catch (err) { console.error(err); D().aviso('No se pudo guardar a la persona. Verificá tus permisos.', 'error'); btn.disabled = false; return; }
   try {
     const r = await D().crearAcceso(email);

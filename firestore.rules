@@ -2,72 +2,101 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // ── Quién es quién ─────────────────────────────────────────────
+    // Cada persona del personal tiene un documento users/{correo en minúsculas} con su nivel y el negocio (centro) al que pertenece.
+    // Todos los datos de un centro viven bajo negocios/{id}/… y SOLO los ve el personal de ese centro.
     function mail() { return request.auth.token.email.lower(); }
     function logueado() { return request.auth != null && request.auth.token.email != null; }
+    function perfilDe() { return get(/databases/$(database)/documents/users/$(mail())).data; }
+    function activoG() { return logueado() && exists(/databases/$(database)/documents/users/$(mail())) && perfilDe().activo == true; }
+    function esSuperadmin() { return logueado() && exists(/databases/$(database)/documents/superadmins/$(mail())); }
 
-    // Perfil del personal: el documento de "users" tiene como ID el email en minúsculas.
-    function perfil() { return get(/databases/$(database)/documents/users/$(mail())).data; }
-    function esPersonal() {
-      return logueado()
-        && exists(/databases/$(database)/documents/users/$(mail()))
-        && perfil().activo == true;
+    // Un centro está vigente si está activo, o en prueba y la semana todavía no terminó.
+    function vigente(nid) {
+      let n = get(/databases/$(database)/documents/negocios/$(nid)).data;
+      return n.estado == 'activo' || (n.estado == 'prueba' && (n.get('vence', null) == null || n.vence > request.time));
     }
-    function esSenior() { return esPersonal() && perfil().rol_jerarquia == 'senior'; }
+    function personalDe(nid) { return activoG() && perfilDe().negocio_id == nid && vigente(nid); }
+    function seniorDe(nid) { return personalDe(nid) && perfilDe().rol_jerarquia == 'senior'; }
 
-    function clienteDe(id) { return get(/databases/$(database)/documents/clients/$(id)).data; }
-    // Titular de la empresa: el correo cargado en la ficha (usuario_id, en minúsculas).
-    function esDueno(clienteId) { return logueado() && clienteDe(clienteId).usuario_id == request.auth.token.email; }
+    // Datos del socio dentro de un centro.
+    function clienteDe(nid, id) { return get(/databases/$(database)/documents/negocios/$(nid)/clients/$(id)).data; }
+    function esDueno(nid, id) { return logueado() && vigente(nid) && clienteDe(nid, id).usuario_id == request.auth.token.email; }
+    function pathAcceso(nid, id) { return /databases/$(database)/documents/negocios/$(nid)/accesos_portal/$(request.auth.token.email + '__' + id); }
+    function tieneAcceso(nid, id) { return logueado() && vigente(nid) && exists(pathAcceso(nid, id)) && get(pathAcceso(nid, id)).data.activo == true; }
+    function puede(nid, id, permiso) { return tieneAcceso(nid, id) && get(pathAcceso(nid, id)).data[permiso] == true; }
 
-    // Otras personas de la empresa: documento en accesos_portal con ID "correo__idEmpresa" y permisos propios.
-    function pathAcceso(clienteId) { return /databases/$(database)/documents/accesos_portal/$(request.auth.token.email + '__' + clienteId); }
-    function tieneAcceso(clienteId) { return logueado() && exists(pathAcceso(clienteId)) && get(pathAcceso(clienteId)).data.activo == true; }
-    function puede(clienteId, permiso) { return tieneAcceso(clienteId) && get(pathAcceso(clienteId)).data[permiso] == true; }
+    // ── Administradores de The DOM Studio Web ─────────────────────
+    // Solo existen si se cargan a mano en la consola. Pueden dar de alta centros y sus primeros usuarios.
+    match /superadmins/{id} {
+      allow get: if logueado() && id == mail();
+    }
 
-    // Personal: cada uno lee su propio perfil; todo el personal ve a los demás.
-    // Solo un Profesional Senior da de alta, cambia nivel o da de baja.
+    // ── Centros ────────────────────────────────────────────────────
+    // Los miembros leen la ficha de su centro (aunque esté vencido, para poder avisarles). El Senior fija el vencimiento de la
+    // prueba una sola vez, en su primer ingreso, y nunca más de 7 días (se deja 1 día de margen por el reloj del teléfono).
+    match /negocios/{nid} {
+      allow get: if esSuperadmin() || (activoG() && perfilDe().negocio_id == nid);
+      allow list, create, delete: if esSuperadmin();
+      allow update: if esSuperadmin()
+        || (activoG() && perfilDe().negocio_id == nid && perfilDe().rol_jerarquia == 'senior'
+            && resource.data.estado == 'prueba' && resource.data.get('vence', null) == null
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['vence'])
+            && request.resource.data.vence <= request.time + duration.value(8, 'd'));
+
+      // Datos del centro: nombre, teléfono, actividades y salones. Lo lee el personal; solo el Senior lo cambia.
+      match /config/{id} {
+        allow read: if personalDe(nid);
+        allow write: if seniorDe(nid);
+      }
+
+      match /tasks/{id} {
+        allow read, write: if personalDe(nid);
+      }
+
+      // Socios: el personal gestiona todo; el socio ve solo su ficha.
+      match /clients/{id} {
+        allow read: if personalDe(nid) || (logueado() && vigente(nid) && resource.data.usuario_id == request.auth.token.email) || tieneAcceso(nid, id);
+        allow write: if personalDe(nid);
+      }
+
+      // Documentos: personal total; el socio ve y sube solo los de su ficha.
+      match /documents/{id} {
+        allow read: if personalDe(nid) || esDueno(nid, resource.data.cliente_id) || tieneAcceso(nid, resource.data.cliente_id);
+        allow create: if personalDe(nid) || esDueno(nid, request.resource.data.cliente_id) || puede(nid, request.resource.data.cliente_id, 'puede_subir');
+        allow update, delete: if personalDe(nid);
+      }
+
+      match /entregas/{id} {
+        allow read: if personalDe(nid) || esDueno(nid, resource.data.cliente_id) || puede(nid, resource.data.cliente_id, 'puede_descargar');
+        allow create, update: if personalDe(nid);
+        allow delete: if seniorDe(nid);
+      }
+
+      // Accesos de personas de un socio: el personal los administra; cada persona ve los suyos.
+      match /accesos_portal/{id} {
+        allow read: if personalDe(nid) || (logueado() && vigente(nid) && resource.data.email == request.auth.token.email);
+        allow write: if personalDe(nid);
+      }
+
+      match /mensajes/{id} {
+        allow read, write: if personalDe(nid);
+      }
+    }
+
+    // ── Personal ───────────────────────────────────────────────────
+    // Cada persona lee su propio perfil. El personal ve solo a los de su mismo centro.
+    // Un Senior da de alta, cambia el nivel o da de baja, siempre dentro de su centro.
     match /users/{id} {
-      allow get: if logueado() && (id == mail() || esPersonal());
-      allow list: if esPersonal();
-      allow create, update, delete: if esSenior();
-    }
-
-    // Clientes: el personal gestiona todo; el cliente ve solo su ficha.
-    match /clients/{id} {
-      allow read: if esPersonal() || (logueado() && resource.data.usuario_id == request.auth.token.email) || tieneAcceso(id);
-      allow write: if esPersonal();
-    }
-
-    // Datos del negocio (Bienestar): nombre, teléfono y actividades. Lo lee el personal; solo la Dirección lo cambia.
-    match /config/{id} {
-      allow read: if esPersonal();
-      allow write: if esSenior();
-    }
-
-    match /tasks/{id} {
-      allow read, write: if esPersonal();
-    }
-
-    // Documentos: personal total; el cliente ve y sube solo los de su ficha.
-    match /documents/{id} {
-      allow read: if esPersonal() || esDueno(resource.data.cliente_id) || tieneAcceso(resource.data.cliente_id);
-      allow create: if esPersonal() || esDueno(request.resource.data.cliente_id) || puede(request.resource.data.cliente_id, 'puede_subir');
-      allow update, delete: if esPersonal();
-    }
-
-    match /entregas/{id} {
-      allow read: if esPersonal() || esDueno(resource.data.cliente_id) || puede(resource.data.cliente_id, 'puede_descargar');
-      allow create, update: if esPersonal();
-      allow delete: if esSenior();
-    }
-
-    // Accesos de personas de una empresa: el personal los administra; cada persona ve los suyos.
-    match /accesos_portal/{id} {
-      allow read: if esPersonal() || (logueado() && resource.data.email == request.auth.token.email);
-      allow write: if esPersonal();
-    }
-
-    match /mensajes/{id} {
-      allow read, write: if esPersonal();
+      allow get: if esSuperadmin() || (logueado() && id == mail()) || (activoG() && perfilDe().negocio_id == resource.data.negocio_id);
+      allow list: if esSuperadmin() || (activoG() && vigente(perfilDe().negocio_id) && resource.data.negocio_id == perfilDe().negocio_id);
+      allow create: if esSuperadmin()
+        || (activoG() && vigente(perfilDe().negocio_id) && perfilDe().rol_jerarquia == 'senior' && request.resource.data.negocio_id == perfilDe().negocio_id);
+      allow update: if esSuperadmin()
+        || (activoG() && vigente(perfilDe().negocio_id) && perfilDe().rol_jerarquia == 'senior'
+            && resource.data.negocio_id == perfilDe().negocio_id && request.resource.data.negocio_id == perfilDe().negocio_id);
+      allow delete: if esSuperadmin()
+        || (activoG() && vigente(perfilDe().negocio_id) && perfilDe().rol_jerarquia == 'senior' && resource.data.negocio_id == perfilDe().negocio_id);
     }
   }
 }

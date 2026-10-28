@@ -24,3 +24,6 @@ Ver `GUIA_Alta_de_cliente_nuevo.md` (rubro `bienestar`). `node alta/preparar-cli
 - Planes y cobro de cuotas (hoy solo fechas de vencimiento de cuota y apto médico); asistencia a clases; lista de espera.
 - Página pública del negocio (FrontEnd) y widget con los turnos del día.
 - Manual PDF y manual MD para Claudio.
+
+## Multi-centro
+Una sola app para muchos centros: datos en `negocios/{id}/…`, personal en `users/{correo}` con `negocio_id`, alta en `/centros/`. Detalle en MANUAL_Claudio_DOMino_Bienestar.md. Reglas: `firestore.rules` (pegar en Firestore → Reglas). Turnos: Code.gs nuevo (Implementar → nueva versión; autorizar los permisos nuevos de hojas y de conexión externa).

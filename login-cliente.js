@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, setPersistence, browserLocalPersistence, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
+try { const _n = new URLSearchParams(location.search).get("n"); if (_n && /^[a-z0-9-]{3,60}$/.test(_n)) localStorage.setItem("domino_nid", _n); } catch (e) {}
 const firebaseConfig = {
   apiKey: "AIzaSyB0y7cFZ-HnGrasLsg-HTeWXvenZSZzSpQ",
   authDomain: "domino-bienestar.firebaseapp.com",
@@ -32,7 +33,7 @@ document.getElementById('btn-login').addEventListener('click', async () => {
 
         await setPersistence(auth, browserLocalPersistence);
         await signInWithEmailAndPassword(auth, email, password);
-        window.location.replace('portal-cliente.html');
+        window.location.replace('portal-cliente.html?n=' + encodeURIComponent((() => { try { return new URLSearchParams(location.search).get('n') || localStorage.getItem('domino_nid') || ''; } catch (e) { return ''; } })()));
 
     } catch (error) {
         btnLogin.innerText = "Ingresar";

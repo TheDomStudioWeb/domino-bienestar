@@ -31,7 +31,7 @@ function pedirClave(msg) {
 async function cargar() {
   if (!KEY) return pedirClave();
   try {
-    const r = await fetch(window.TURNOS_API + '?action=widget&key=' + encodeURIComponent(KEY)), w = await r.json();
+    const r = await fetch(window.TURNOS_API + '?action=widget&negocio=' + encodeURIComponent(localStorage.getItem('domino_nid') || '') + '&key=' + encodeURIComponent(KEY)), w = await r.json();
     if (!w.ok) { if (w.error === 'sin_autorizacion') { try { localStorage.removeItem('turnos_widget_key'); } catch (e) {} KEY = ''; return pedirClave('La clave no es correcta.'); } throw 0; }
     pintar(w);
   } catch (e) { if (!M.querySelector('.f,.prox')) M.innerHTML = '<h1>Turnos de hoy</h1><div class="err">No se pudo actualizar. Se reintenta solo.</div>'; }

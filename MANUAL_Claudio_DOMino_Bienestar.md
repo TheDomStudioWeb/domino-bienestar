@@ -51,3 +51,26 @@ Planes y cobro de cuotas (por ahora solo se carga la fecha de vencimiento), asis
 - *¿Cuántas personas entran a una clase?* Lo define el cupo de cada clase en la planilla (columna `cupo`).
 - *¿Puedo tener más de un peluquero?* Sí: se agregan como profesionales en la hoja `recursos` y se les asigna el servicio.
 - *¿Mis datos son privados?* Cada centro tiene su propia base; nadie de otro centro ve nada.
+
+## Varios centros en una sola app (multi-centro)
+
+Una sola copia de DOMino Bienestar (domino-bienestar.web.app) atiende a muchos gimnasios, estudios y spas. Cada centro tiene sus datos separados y solo su personal los ve.
+
+**Cómo se organiza**
+- Cada centro es un documento `negocios/{id}` (nombre, estado `prueba` | `activo` | `suspendido`, `vence`, `dias_prueba`). Todo lo suyo (socios, tareas, documentos, mensajes, configuración) vive debajo: `negocios/{id}/…`.
+- Cada persona del personal tiene `users/{correo}` con `negocio_id` y `rol_jerarquia` (`senior`, `midsenior`, `asistente`). Las reglas de Firestore solo dejan ver el centro propio.
+- Cada centro tiene su propia planilla de turnos (Google Sheets) creada por el script; el directorio vive en la hoja `negocios` de la planilla del script.
+- `superadmins/{correo}`: cuentas de The DOM que pueden dar de alta centros (se cargan a mano en la consola de Firestore).
+
+**Alta de un centro nuevo (Daniel)**
+1. Entrar a `domino-bienestar.web.app/centros/` con la cuenta superadmin.
+2. Completar nombre del centro, nombre, apellido y correo del propietario, clave temporal y días de prueba. «Crear centro y usuario» arma la planilla de turnos, el centro, la cuenta y el permiso de Dirección (se puede repetir sin duplicar).
+3. Pasarle al propietario la dirección, el correo y la clave temporal.
+
+**Prueba de una semana**: el vencimiento se fija solo en el primer ingreso de la Dirección (hasta 7 días). Vencida la prueba, nadie del centro entra hasta que se lo pase a «activo» desde la misma pantalla (o «Dar 7 días más»). Un aviso en el Hub muestra cuánto falta.
+
+**Enlaces por centro**: la reserva pública y el portal del socio llevan `?n=id-del-centro` (el Hub los copia ya armados).
+
+**Turnos**: el personal entra a la agenda con la misma cuenta del Hub (sesión de 12 h que se renueva sola). Al guardar las actividades del centro, la planilla recibe los servicios y horarios típicos. Los recordatorios por correo recorren todos los centros.
+
+**Si algo no entra**: «sin centro» = a `users/{correo}` le falta `negocio_id`; «prueba terminada» = estado o `vence` del centro.

@@ -1,8 +1,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getAnalytics } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-analytics.js";
-import { getFirestore, collection, getDocs, addDoc, doc, updateDoc, query, where, getDoc, serverTimestamp, onSnapshot, orderBy,deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, getDocs, addDoc, updateDoc, query, where, getDoc, serverTimestamp, onSnapshot, orderBy, deleteDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, createUserWithEmailAndPassword, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { collection, doc, fijarNegocio, negocioActual } from "./tenant.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyB0y7cFZ-HnGrasLsg-HTeWXvenZSZzSpQ",
@@ -667,6 +668,15 @@ async function actualizarKPIs() {
 }
 window.actualizarKPIs = actualizarKPIs;
 
+// Cartel arriba del Hub mientras dure la prueba.
+function avisoPrueba() {
+    const n = window.DOMINO.negocioDoc; if (!n || n.estado !== 'prueba') return;
+    let b = document.getElementById('aviso-prueba');
+    if (!b) { b = document.createElement('div'); b.id = 'aviso-prueba'; b.setAttribute('role', 'status'); b.style.cssText = 'margin:0 0 12px;padding:10px 14px;border:1px solid #d4af37;border-radius:10px;background:#d4af3718;color:#e8c766;font-size:.95rem'; const mc = document.getElementById('main-content'); mc.insertBefore(b, mc.firstChild); }
+    const dias = n.vence ? Math.max(0, Math.ceil((n.vence - Date.now()) / 86400000)) : null;
+    b.textContent = dias === null ? 'Período de prueba: la semana empieza con su primer ingreso.' : `Período de prueba: ${dias === 1 ? 'queda 1 día' : 'quedan ' + dias + ' días'}.`;
+}
+
 async function iniciarApp() {
     onAuthStateChanged(auth, async (usuario) => {
         if (!usuario) {
@@ -674,23 +684,36 @@ async function iniciarApp() {
             return;
         }
         
-        const q = query(collection(db, "users"), where("email", "==", usuario.email));
-        const userSnap = await getDocs(q);
+        // Perfil: documento users/{correo en minúsculas}. Trae el rol y el negocio al que pertenece.
+        let perfilSnap = null;
+        try { perfilSnap = await getDoc(doc(db, "users", String(usuario.email || '').toLowerCase())); } catch (e) { console.error(e); }
+        const salir = async (texto) => { alert(texto); await signOut(auth); window.location.replace('login.html'); };
 
-        if (userSnap.empty) {
-            alert("Usuario sin perfil asignado. Contacte al administrador.");
-            await signOut(auth);
-            window.location.replace('login.html');
-            return;
-        }
+        if (!perfilSnap || !perfilSnap.exists()) return salir("Usuario sin perfil asignado. Contacte al administrador.");
+        const perfil = perfilSnap.data();
+        if (perfil.activo === false) return salir("Tu acceso está dado de baja. Contactá a la Dirección del centro.");
+        if (!perfil.negocio_id) return salir("Su usuario todavía no tiene un centro asignado. Contacte a The DOM Studio Web.");
 
-        const perfil = userSnap.docs[0].data();
-        if (perfil.activo === false) {
-            alert("Tu acceso está dado de baja. Contactá a la Dirección del centro.");
-            await signOut(auth);
-            window.location.replace('login.html');
-            return;
+        // Negocio: de acá salen todos los datos. Si está suspendido o la prueba terminó, no se entra.
+        fijarNegocio(perfil.negocio_id);
+        let negSnap = null;
+        try { negSnap = await getDoc(doc(db, "negocios", perfil.negocio_id)); } catch (e) { console.error(e); }
+        if (!negSnap || !negSnap.exists()) return salir("No encontramos el centro de su cuenta. Contacte a The DOM Studio Web.");
+        let neg = negSnap.data();
+        const ahora = Date.now(), venceMs = neg.vence && neg.vence.toMillis ? neg.vence.toMillis() : null;
+        if (neg.estado === 'suspendido') return salir("El acceso de este centro está suspendido. Contacte a The DOM Studio Web.");
+        if (neg.estado === 'prueba' && venceMs && venceMs < ahora) return salir("La semana de prueba de este centro terminó. Contacte a The DOM Studio Web para continuar.");
+        // La semana de prueba empieza en el primer ingreso del Senior (el servidor la fija y las reglas la limitan a 7 días).
+        if (neg.estado === 'prueba' && !venceMs && perfil.rol_jerarquia === 'senior') {
+            try {
+                const dias = Math.min(Number(neg.dias_prueba) || 7, 7);
+                const hasta = new Date(ahora + dias * 86400000 - 60000);
+                await updateDoc(doc(db, "negocios", perfil.negocio_id), { vence: hasta });
+                neg = Object.assign({}, neg, { vence: { toMillis: () => hasta.getTime() } });
+            } catch (e) { console.warn('No se pudo fijar el vencimiento de la prueba', e); }
         }
+        window.DOMINO.negocioId = perfil.negocio_id;
+        window.DOMINO.negocioDoc = { nombre: neg.nombre || '', estado: neg.estado || 'activo', vence: neg.vence && neg.vence.toMillis ? neg.vence.toMillis() : null };
         const rolUsuario = perfil.rol_jerarquia;
         window.rolActual = rolUsuario;
         window.nombreDisplay = perfil.nombre_display || '';
@@ -707,6 +730,7 @@ async function iniciarApp() {
             await cargarMisTareas(window.nombreDisplay);
         }
         iniciarBadgeChat();
+        avisoPrueba();
         window.DOMINO.listo = true;
         window.dispatchEvent(new Event('domino:listo'));
         navegarA('hub');
@@ -1368,7 +1392,7 @@ let unsubscribeChat = null;
 let usuariosChat = [];
 
 async function cargarUsuariosChat() {
-    const querySnapshot = await getDocs(collection(db, "users"));
+    const querySnapshot = await getDocs(query(collection(db, "users"), where("negocio_id", "==", negocioActual())));
     usuariosChat = [];
     querySnapshot.forEach((doc) => {
         const user = doc.data();

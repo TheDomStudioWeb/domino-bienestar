@@ -3,9 +3,9 @@ const crypto = require('crypto'), fs = require('fs'), vm = require('vm');
 function crear(datosIniciales) {
   const libros = JSON.parse(JSON.stringify(datosIniciales)); // {hoja: [[...],[...]]}
   const props = {}, cache = {}, correos = []; let ahora = Date.now(); let lockTomado = false;
-  const hoja = n => {
-    if (!libros[n]) return null;
-    const v = () => libros[n];
+  const hojaDe = (L, n) => {
+    if (!L[n]) return null;
+    const v = () => L[n];
     const lim = x => (typeof x === 'string' && x[0] === "'") ? x.slice(1) : x;
     const api = {
       getDataRange: () => ({ getValues: () => v().map(r => r.slice()) }),
@@ -20,9 +20,13 @@ function crear(datosIniciales) {
     };
     return api;
   };
+  const extra = {}, fsDocs = {}; let nExtra = 0, fetches = 0;
+  const hoja = n => hojaDe(libros, n);
+  const ssDe = (L, id) => ({ getSheetByName: n => hojaDe(L, n), getId: () => id, getUrl: () => 'https://docs.google.com/spreadsheets/d/' + id, getSheets: () => Object.keys(L).map(k => Object.assign(hojaDe(L, k), { setName: nn => { L[nn] = L[k]; delete L[k]; return hojaDe(L, nn); } })), insertSheet: n => { L[n] = [[]]; L[n].length = 0; return hojaDe(L, n); } });
   const ctx = {
     console, Date, JSON, Math, Object, String, Number, Array, Error, Boolean, RegExp, Promise,
-    SpreadsheetApp: { getActiveSpreadsheet: () => ({ getSheetByName: hoja }) },
+    SpreadsheetApp: { getActiveSpreadsheet: () => ssDe(libros, 'ACTIVA'), openById: id => { if (!extra[id]) throw new Error('sin libro ' + id); return ssDe(extra[id], id); }, create: nombre => { const id = 'LIBRO' + (++nExtra); extra[id] = { Sheet1: [] }; return ssDe(extra[id], id); } },
+    UrlFetchApp: { fetch: (url, o) => { fetches++; const tok = (o.headers.Authorization || '').replace('Bearer ', ''); const ruta = decodeURIComponent(url.split('/documents/')[1]); const d = fsDocs[tok + '|' + ruta] || fsDocs['*|' + ruta]; if (!fsDocs[tok + '|ok'] ) return { getResponseCode: () => 401, getContentText: () => '{}' }; if (!d) return { getResponseCode: () => 404, getContentText: () => '{}' }; const f = {}; Object.keys(d).forEach(k => { const x = d[k]; f[k] = typeof x === 'boolean' ? { booleanValue: x } : { stringValue: String(x) }; }); return { getResponseCode: () => 200, getContentText: () => JSON.stringify({ fields: f }) }; } },
     Logger: { log: () => {} },
     LockService: { getScriptLock: () => ({ tryLock: () => { if (lockTomado) return false; lockTomado = true; return true; }, waitLock: () => { lockTomado = true; }, releaseLock: () => { lockTomado = false; } }) },
     CacheService: { getScriptCache: () => ({ get: k => cache[k] ?? null, put: (k, x) => { cache[k] = x; }, remove: k => { delete cache[k]; } }) },
@@ -47,6 +51,6 @@ function crear(datosIniciales) {
   vm.createContext(ctx);
   vm.runInContext(fs.readFileSync(__dirname + '/../apps-script/Code.gs', 'utf8') + '\n;globalThis.__api={doPost,doGet,prepararWidget,enviarRecordatorios,protegerClaves};', ctx);
   const llamar = p => JSON.parse(ctx.__api.doPost({ postData: { contents: JSON.stringify(p) } }).getContent());
-  return { llamar, libros, correos, ctx, setAhora: t => { ahora = t; }, props, cache, api: ctx.__api, forzarLock: v => { lockTomado = v; } };
+  return { fsDocs, extra, fetchesN: () => fetches, llamar, libros, correos, ctx, setAhora: t => { ahora = t; }, props, cache, api: ctx.__api, forzarLock: v => { lockTomado = v; } };
 }
 module.exports = { crear };

@@ -32,12 +32,100 @@ const TRANSICIONES = {
 };
 const HOJAS = { config: 'config', recursos: 'recursos', servicios: 'servicios', horarios: 'horarios', bloqueos: 'bloqueos', turnos: 'turnos', slots: 'slots', usuarios: 'usuarios' };
 const COL_TURNOS = ['id', 'codigo', 'estado', 'fecha', 'hora', 'duracion_min', 'recurso_id', 'servicio_id', 'cliente_id', 'cliente_nombre', 'contacto_nombre', 'contacto_tel', 'contacto_email', 'sujeto_nombre', 'sujeto_tipo', 'nota', 'motivo_cancelacion', 'reprogramado_de', 'origen', 'consentimiento', 'avisado', 'creado', 'actualizado'];
+const FIREBASE_PROYECTO = 'domino-bienestar'; // proyecto Firebase donde viven las cuentas (users, negocios, superadmins)
+const DIAS_TOKEN_FB = 0.5; // la sesión con cuenta de Firebase dura 12 h; después se renueva sola desde el Hub
+const ROL_FB = { senior: 'Senior', midsenior: 'Mid Senior', asistente: 'Asistente' };
 const CAMPOS_TEXTO = ['fecha', 'hora', 'contacto_tel', 'codigo', 'desde', 'hasta'];
+
+// ── Varios centros en un mismo script ──────────────────────────────
+// Cada centro (negocio) tiene su propia planilla. La planilla donde está el script guarda solo el directorio
+// (hoja «negocios»: nid · libro_id · nombre · creado). NEG_ es el centro del pedido en curso; vacío = planilla del script (modo anterior).
+var NEG_ = '', LIBROS_ = {};
+const COL_NEGOCIOS = ['nid', 'libro_id', 'nombre', 'creado'];
+function dirHoja_() { const ss = SpreadsheetApp.getActiveSpreadsheet(); return ss.getSheetByName('negocios') || (function () { const h = ss.insertSheet('negocios'); h.getRange(1, 1, 1, COL_NEGOCIOS.length).setValues([COL_NEGOCIOS]); return h; })(); }
+function directorio_() {
+  const d = dirHoja_().getDataRange().getValues(); d.shift();
+  return d.filter(r => r[0]).map(r => ({ nid: String(r[0]), libro_id: String(r[1]), nombre: String(r[2] || '') }));
+}
+function idNegocio_(v) { const n = String(v || '').trim().toLowerCase(); return /^[a-z0-9][a-z0-9-]{2,39}$/.test(n) ? n : ''; }
+function libro_() {
+  if (!NEG_) return SpreadsheetApp.getActiveSpreadsheet();
+  if (LIBROS_[NEG_]) return LIBROS_[NEG_];
+  const cache = CacheService.getScriptCache(), k = 'dir_' + NEG_;
+  let id = cache.get(k);
+  if (!id) { const f = directorio_().find(x => x.nid === NEG_); if (!f) throw falla_('negocio_inexistente'); id = f.libro_id; try { cache.put(k, id, 300); } catch (e) {} }
+  return LIBROS_[NEG_] = SpreadsheetApp.openById(id);
+}
+function usarNegocio_(v) {
+  const n = idNegocio_(v); if (!n) throw falla_('negocio_inexistente');
+  NEG_ = n; libro_(); return n;
+}
+
+// ── Cuentas de Firebase ────────────────────────────────────────────
+// El Hub manda el id_token de la persona que ingresó. Firestore mismo lo verifica (firma, vencimiento, proyecto) al leer su perfil con ese token;
+// las reglas solo dejan leer el propio perfil. Así este script no guarda claves ni secretos de las cuentas.
+function fsCampo_(v) { if (!v) return null; if ('stringValue' in v) return v.stringValue; if ('booleanValue' in v) return v.booleanValue; if ('timestampValue' in v) return v.timestampValue; if ('integerValue' in v) return Number(v.integerValue); if ('nullValue' in v) return null; return null; }
+function fsGet_(ruta, idToken) {
+  const r = UrlFetchApp.fetch('https://firestore.googleapis.com/v1/projects/' + FIREBASE_PROYECTO + '/databases/(default)/documents/' + ruta, { method: 'get', headers: { Authorization: 'Bearer ' + idToken }, muteHttpExceptions: true });
+  const c = r.getResponseCode(); if (c === 404) return null; if (c !== 200) throw falla_('sesion_invalida');
+  const o = {}, campos = (JSON.parse(r.getContentText()).fields) || {}; Object.keys(campos).forEach(k => { o[k] = fsCampo_(campos[k]); });
+  return o;
+}
+function emailDeIdToken_(idToken) {
+  const x = String(idToken || '').split('.'); if (x.length !== 3) throw falla_('sesion_invalida');
+  let pl; try { pl = JSON.parse(Utilities.newBlob(Utilities.base64DecodeWebSafe(x[1] + '='.repeat((4 - x[1].length % 4) % 4))).getDataAsString()); } catch (e) { throw falla_('sesion_invalida'); }
+  const email = String(pl.email || '').toLowerCase();
+  if (!email || pl.aud !== FIREBASE_PROYECTO || !(Number(pl.exp) * 1000 > Date.now())) throw falla_('sesion_invalida');
+  return email;
+}
+function vigenteFb_(n) { if (!n) return false; if (n.estado === 'activo') return true; if (n.estado !== 'prueba') return false; return !n.vence || Date.parse(n.vence) > Date.now(); }
+function sesionFb_(p) {
+  const email = emailDeIdToken_(p.id_token), perfil = fsGet_('users/' + encodeURIComponent(email), p.id_token);
+  if (!perfil || perfil.activo !== true || !perfil.negocio_id || !ROL_FB[perfil.rol_jerarquia]) return { ok: false, error: 'usuario_invalido' };
+  const neg = fsGet_('negocios/' + encodeURIComponent(perfil.negocio_id), p.id_token);
+  if (!vigenteFb_(neg)) return { ok: false, error: 'negocio_vencido' };
+  usarNegocio_(perfil.negocio_id);
+  const nombre = limpiar_(perfil.nombre_display || email, 60).replace(/\|/g, ' '), rol = ROL_FB[perfil.rol_jerarquia];
+  const pl = Utilities.base64EncodeWebSafe(Utilities.newBlob(['f', NEG_, rol, nombre, email, Date.now() + DIAS_TOKEN_FB * 86400000].join('|')).getBytes());
+  return { ok: true, token: pl + '.' + firma_(pl), negocio: NEG_, usuario: { nombre: nombre, email: email, rol: rol, recurso_id: '' } };
+}
+
+// Alta de un centro (solo cuentas de la hoja de superadmins de Firestore): crea su planilla y lo anota en el directorio.
+function crearNegocio_(p) {
+  const email = emailDeIdToken_(p.id_token);
+  if (!fsGet_('superadmins/' + encodeURIComponent(email), p.id_token)) throw falla_('sin_permiso');
+  const nid = idNegocio_(p.nid); if (!nid) throw falla_('negocio_invalido');
+  const nombre = limpiar_(p.nombre, 80) || nid;
+  const lock = LockService.getScriptLock(); if (!lock.tryLock(30000)) throw falla_('ocupado');
+  try {
+    const ya = directorio_().find(x => x.nid === nid); if (ya) return { ok: true, nid: nid, existente: true, libro_id: ya.libro_id };
+    const ss = SpreadsheetApp.create('DOMino Turnos · ' + nombre);
+    const cols = { config: ['clave', 'valor'], recursos: COL_RECURSOS, servicios: COL_SERVICIOS, horarios: COL_HORARIOS, bloqueos: ['id', 'recurso_id', 'desde', 'hasta', 'motivo'], turnos: COL_TURNOS, slots: ['clave', 'turno_id'], usuarios: ['nombre', 'email', 'rol', 'clave', 'estado'] };
+    Object.keys(cols).forEach((n, i) => { const h = i === 0 && ss.getSheets && ss.getSheets()[0] ? ss.getSheets()[0].setName(n) : ss.insertSheet(n); h.getRange(1, 1, 1, cols[n].length).setValues([cols[n]]); });
+    const cfg = ss.getSheetByName('config'); [['nombre', nombre], ['rubro', 'bienestar'], ['telefono', ''], ['paso_min', 30], ['modo_reserva', 'solicitud'], ['anticipacion_min_horas', 2], ['cancelacion_limite_horas', 4], ['ventana_dias', 30]].forEach(r => cfg.appendRow(r));
+    dirHoja_().appendRow([nid, ss.getId(), nombre, new Date().toISOString()]);
+    try { CacheService.getScriptCache().remove('dir_' + nid); } catch (e) {}
+    return { ok: true, nid: nid, libro_id: ss.getId(), libro_url: ss.getUrl ? ss.getUrl() : '' };
+  } finally { lock.releaseLock(); }
+}
+
+// El Hub manda las actividades del centro; se anotan en su planilla y se cargan recursos, servicios y horarios típicos (no pisa nada).
+function sincronizarActividades_(p, u) {
+  if (ROLES_GESTION.indexOf(u.rol) < 0) throw falla_('sin_permiso');
+  const ids = (Array.isArray(p.actividades) ? p.actividades : []).map(x => String(x)).filter(x => (CATALOGO_.actividades || []).some(a => a.id === x));
+  if (!ids.length) throw falla_('sin_actividades');
+  const sh = obtenerHoja_(HOJAS.config), d = sh.getDataRange().getValues();
+  let fila = -1; for (let i = 1; i < d.length; i++) if (String(d[i][0]).trim() === 'actividades') fila = i + 1;
+  if (fila > 0) sh.getRange(fila, 2).setValue(ids.join(',')); else sh.appendRow(['actividades', ids.join(',')]);
+  invalidarHoja_(HOJAS.config);
+  return { ok: true, nuevos: cargarActividades() };
+}
 
 // ── Entrada ───────────────────────────────────────────────────────
 function doGet(e) {
   const p = (e && e.parameter) || {};
   if (p.action === 'widget') {
+    if (p.negocio) { try { usarNegocio_(p.negocio); } catch (x) { return json_({ ok: false, error: 'sin_autorizacion' }); } }
     // Solo lectura para el widget del teléfono. Clave larga en Propiedades del script (LAUNCHER_KEY); se crea con prepararWidget().
     const clave = PropertiesService.getScriptProperties().getProperty('LAUNCHER_KEY');
     if (!clave || p.key !== clave) return json_({ ok: false, error: 'sin_autorizacion' });
@@ -87,12 +175,16 @@ function falla_(codigo) { const e = new Error(codigo); e.codigo = codigo; return
 
 function despachar_(p) {
   const a = String(p.accion || '');
+  NEG_ = ''; LIBROS_ = {}; MEMO_ = {};
+  if (a === 'crear_negocio') return crearNegocio_(p);
+  if (a === 'sesion_fb') return sesionFb_(p);
+  if (p.negocio && !p.token) usarNegocio_(p.negocio); // reserva pública, portal: el centro viene en el pedido
   const PUB = { inicio: inicio_, clases_dias: clasesDias_, config_publica: configPublica_, horarios_libres: horariosLibres_, reservar: reservar_, ver_turno: verTurno_, cancelar_turno: cancelarTurno_ };
   if (PUB[a]) return PUB[a](p);
-  if (a === 'login') return login_(p.email, p.clave);
+  if (a === 'login') { if (p.negocio) usarNegocio_(p.negocio); return login_(p.email, p.clave); }
   const u = validarToken_(p.token);
   if (!u) return { ok: false, error: 'sesion_invalida' };
-  const PRIV = { agenda: agenda_, historial: historial_, vincular_cliente: vincularCliente_, crear_turno: crearTurno_, cambiar_estado: cambiarEstado_, reprogramar: reprogramar_, guardar_bloqueo: guardarBloqueo_, clases_config: clasesConfig_, guardar_clase: guardarClase_, quitar_clase: quitarClase_, recordatorios_manana: recordatoriosManana_, marcar_avisado: marcarAvisado_ };
+  const PRIV = { sincronizar_actividades: sincronizarActividades_, agenda: agenda_, historial: historial_, vincular_cliente: vincularCliente_, crear_turno: crearTurno_, cambiar_estado: cambiarEstado_, reprogramar: reprogramar_, guardar_bloqueo: guardarBloqueo_, clases_config: clasesConfig_, guardar_clase: guardarClase_, quitar_clase: quitarClase_, recordatorios_manana: recordatoriosManana_, marcar_avisado: marcarAvisado_ };
   if (!PRIV[a]) return { ok: false, error: 'accion_desconocida' };
   return PRIV[a](p, u);
 }
@@ -257,7 +349,7 @@ function reservar_(p) {
   if (tel.length < 6) throw falla_('falta_telefono');
   if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw falla_('email_invalido');
   if (!p.consentimiento) throw falla_('falta_consentimiento');
-  const cache = CacheService.getScriptCache(), kT = 'res_' + tel;
+  const cache = CacheService.getScriptCache(), kT = 'res_' + NEG_ + '_' + tel;
   const n = Number(cache.get(kT) || 0);
   if (n >= MAX_RESERVAS_TEL_DIA) throw falla_('demasiadas_reservas');
   const sv = activos_(HOJAS.servicios).find(x => String(x.id) === String(p.servicio_id));
@@ -405,6 +497,12 @@ function marcarAvisado_(p, u) {
 }
 // Disparador diario (configurarDisparador): correo automático a quien dio su correo y consintió
 function enviarRecordatorios() {
+  const centros = directorio_();
+  if (!centros.length) return recordatoriosCentro_();
+  centros.forEach(c => { try { NEG_ = c.nid; LIBROS_ = {}; MEMO_ = {}; recordatoriosCentro_(); } catch (e) { console.error('recordatorios ' + c.nid + ': ' + (e && e.message)); } });
+  NEG_ = '';
+}
+function recordatoriosCentro_() {
   limpiarSlotsViejos_();
   const c = config_(), m = mananaTxt_();
   leerHoja_(HOJAS.turnos).filter(t => t.fecha === m && ESTADOS_ACTIVOS.indexOf(t.estado) > -1 && t.contacto_email && t.consentimiento === 'si' && !t.avisado).forEach(t => {
@@ -458,7 +556,7 @@ function guardarClave_(email, valor) {
 function usuarioLimpio_(u) { return { nombre: u.nombre, email: u.email, rol: u.rol, recurso_id: recursoDe_(u) }; }
 function login_(email, clave) {
   email = String(email || '').trim().toLowerCase();
-  const cache = CacheService.getScriptCache(), k = 'intentos_' + Utilities.base64EncodeWebSafe(email).slice(0, 80);
+  const cache = CacheService.getScriptCache(), k = 'intentos_' + NEG_ + '_' + Utilities.base64EncodeWebSafe(email).slice(0, 60);
   const n = Number(cache.get(k) || 0);
   if (n >= MAX_INTENTOS_LOGIN) return { ok: false, error: 'demasiados_intentos' };
   const u = leerHoja_(HOJAS.usuarios).find(x => String(x.email).toLowerCase() === email);
@@ -468,13 +566,17 @@ function login_(email, clave) {
   if (!esHashClave_(u.clave)) { try { guardarClave_(u.email, hashClave_(clave)); } catch (e) {} }
   return { ok: true, token: firmarToken_(email, Date.now() + DIAS_TOKEN * 86400000), usuario: usuarioLimpio_(u) };
 }
-function firmarToken_(email, exp) { const pl = Utilities.base64EncodeWebSafe(Utilities.newBlob(email + '|' + exp).getBytes()); return pl + '.' + firma_(pl); }
+function firmarToken_(email, exp) { const pl = Utilities.base64EncodeWebSafe(Utilities.newBlob((NEG_ ? NEG_ + '|' : '') + email + '|' + exp).getBytes()); return pl + '.' + firma_(pl); }
 function validarToken_(token) {
   const x = String(token || '').split('.');
   if (x.length !== 2 || !iguales_(firma_(x[0]), x[1])) return null;
-  const t = Utilities.newBlob(Utilities.base64DecodeWebSafe(x[0])).getDataAsString(), corte = t.lastIndexOf('|');
-  const email = t.slice(0, corte), exp = Number(t.slice(corte + 1));
+  const t = Utilities.newBlob(Utilities.base64DecodeWebSafe(x[0])).getDataAsString().split('|');
+  // formatos: [email, exp] (planilla del script) · [nid, email, exp] (centro, usuario de su planilla) · ['f', nid, rol, nombre, email, exp] (cuenta de Firebase)
+  const exp = Number(t[t.length - 1]);
   if (!exp || Date.now() > exp) return null;
+  if (t[0] === 'f' && t.length === 6) { usarNegocio_(t[1]); return { nombre: t[3], email: t[4], rol: t[2], estado: 'Activo' }; }
+  let email;
+  if (t.length === 3) { usarNegocio_(t[0]); email = t[1]; } else if (t.length === 2) email = t[0]; else return null;
   const u = leerHoja_(HOJAS.usuarios).find(y => String(y.email).toLowerCase() === email);
   return u && String(u.estado) === 'Activo' ? u : null; // baja = sesión cortada
 }
@@ -486,23 +588,23 @@ function firma_(texto) {
 }
 
 // ── Utilidades de hoja ───────────────────────────────────────────
-function obtenerHoja_(n) { const s = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(n); if (!s) throw new Error('No existe la hoja ' + n); return s; }
+function obtenerHoja_(n) { const s = libro_().getSheetByName(n); if (!s) throw new Error('No existe la hoja ' + n); return s; }
 // Hojas que casi no cambian: caché de 60 s (y memo dentro del pedido). turnos y slots se leen siempre frescos.
 const HOJAS_CACHE = ['config', 'recursos', 'servicios', 'horarios', 'bloqueos'];
 var MEMO_ = {};
 function leerHoja_(n) {
   if (HOJAS_CACHE.indexOf(n) < 0) return leerHojaDirecto_(n);
   if (MEMO_[n]) return MEMO_[n];
-  const cache = CacheService.getScriptCache(), k = 'h_' + n, g = cache.get(k);
+  const cache = CacheService.getScriptCache(), k = 'h_' + NEG_ + '_' + n, g = cache.get(k);
   if (g) { try { return MEMO_[n] = JSON.parse(g); } catch (e) {} }
   const datos = leerHojaDirecto_(n);
   try { const t = JSON.stringify(datos); if (t.length < 90000) cache.put(k, t, 60); } catch (e) {}
   return MEMO_[n] = datos;
 }
-function invalidarHoja_(n) { delete MEMO_[n]; try { CacheService.getScriptCache().remove('h_' + n); } catch (e) {} }
+function invalidarHoja_(n) { delete MEMO_[n]; try { CacheService.getScriptCache().remove('h_' + NEG_ + '_' + n); } catch (e) {} }
 function limpiarCache() { HOJAS_CACHE.forEach(invalidarHoja_); } // ejecutar a mano si se editó la planilla y no se quiere esperar 60 s
 function leerHojaDirecto_(n) {
-  const sh = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(n); if (!sh) return [];
+  const sh = libro_().getSheetByName(n); if (!sh) return [];
   const d = sh.getDataRange().getValues(); if (d.length <= 1) return [];
   const tz = Session.getScriptTimeZone(), h = d.shift().map(x => String(x).trim().toLowerCase());
   return d.filter(r => r.some(c => c !== '' && c !== null)).map(r => { const o = {}; h.forEach((k, i) => { if (k) o[k] = normalizar_(r[i], tz, k); }); return o; });

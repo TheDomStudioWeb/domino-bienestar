@@ -2,8 +2,9 @@
 // La primera vez que entra la Dirección, carga el nombre del negocio y elige qué actividades realiza (gimnasio, clases, spa, peluquería…).
 // Se guarda en Firestore: config/negocio. El catálogo de actividades sale de turnos/catalogo-actividades.json (ver actividades-datos.js).
 // Para sumar una actividad nueva: agregarla al catálogo y correr  node alta/sincronizar-catalogo.js  (no se toca nada más).
-import { doc, getDoc, setDoc, updateDoc, collection, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-import { llamar } from "./turnos/api.js";
+import { getDoc, setDoc, updateDoc, getDocs, query, where, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { llamar, sesionAgenda, guardarSesionAgenda, abrirSesionAgenda } from "./turnos/api.js";
+import { collection, doc } from "./tenant.js";
 
 const D = () => window.DOMINO, $ = (id) => document.getElementById(id);
 const CAT = () => (window.DOMINO_CATALOGO && window.DOMINO_CATALOGO.actividades) || [];
@@ -153,6 +154,8 @@ function asistente(tabInicial) {
       if (!negocio) datos.creado = serverTimestamp();
       await setDoc(doc(D().db, 'config', 'negocio'), datos, { merge: true });
       negocio = Object.assign({}, negocio, datos); window.DOMINO_NEGOCIO = negocio;
+      // La agenda de turnos del centro se arma sola con las actividades elegidas (recursos, servicios y horarios típicos; no pisa lo ya cargado).
+      if (window.TURNOS_API) apiAgenda('sincronizar_actividades', { actividades: acts }).then((r) => { if (!r.ok) console.warn('Agenda: no se pudieron cargar las actividades', r.error); }).catch(() => {});
       cerrar(); pintarPanel(true); aplicarLogo(); if (nom) document.querySelectorAll('.brand-name b').forEach((el) => { el.textContent = nom; });
     } catch (e) { console.error(e); $('bn-ok').disabled = false; $('bn-ok').textContent = 'Guardar'; err('No se pudo guardar. Revise su conexión e intente de nuevo.'); }
   };
@@ -371,10 +374,10 @@ const salonesCentro = () => ((negocio && negocio.salones) || []).filter((n) => n
 const tieneClases = (acts) => (acts || []).some((id) => ((CAT().find((a) => a.id === id) || {}).clases || []).length);
 const ERR_CLASE = { cupo_invalido: 'El cupo tiene que ser de 2 a 500 personas.', duracion_invalida: 'Elija una duración de la lista.', horario_invalido: 'Revise los horarios: elija al menos un día y la hora de inicio.', faltan_horarios: 'Agregue al menos un día y horario.', falta_nombre_clase: 'Escriba el nombre de la clase.', sin_permiso: 'Su usuario de la agenda no tiene permiso para cambiar clases (lo hace la Dirección).', usuario_invalido: 'Ese correo no está habilitado en la agenda.', clave_incorrecta: 'La clave no es correcta.', demasiados_intentos: 'Demasiados intentos. Espere unos minutos.', servicio_invalido: 'Esa clase ya no existe. Actualice la lista.', accion_desconocida: 'La agenda todavía usa el script anterior: falta implementar el Code.gs nuevo como «Nueva versión».', tiempo_agotado: 'La agenda tarda en responder. Intente de nuevo.', sin_conexion: 'No hay conexión con la agenda. Revise su internet e intente de nuevo.' };
 const errClase = (e) => ERR_CLASE[e] || 'No se pudo completar (' + (e || 'error') + '). Intente de nuevo.';
-const sesionAgenda = () => { try { return JSON.parse(localStorage.getItem('turnos_sesion') || 'null'); } catch (e) { return null; } };
-const guardarSesionAgenda = (s) => { try { s ? localStorage.setItem('turnos_sesion', JSON.stringify(s)) : localStorage.removeItem('turnos_sesion'); } catch (e) {} };
+const tokenCuenta = async () => { try { const u = D().auth && D().auth.currentUser; return u ? await u.getIdToken() : ''; } catch (e) { return ''; } };
+const renovarAgenda = () => abrirSesionAgenda(tokenCuenta);
 async function apiAgenda(accion, datos) {
-  const s = sesionAgenda(); if (!s || !s.tok) return { ok: false, error: 'sesion_invalida' };
+  const s = await renovarAgenda(); if (!s || !s.tok) return { ok: false, error: 'sesion_invalida' };
   const r = await llamar(accion, Object.assign({}, datos, { token: s.tok }));
   if (!r.ok && r.error === 'sesion_invalida') guardarSesionAgenda(null);
   return r;
@@ -390,8 +393,8 @@ function cajaClases(html) {
 }
 async function adminClases() {
   if (!window.TURNOS_API) { cajaClases('<h2 id="bn-t">Clases del centro</h2><p>La agenda de turnos todavía no está conectada.</p>'); return; }
-  if (!sesionAgenda()) return loginAgenda();
   cajaClases('<h2 id="bn-t">Clases del centro</h2><p>Cargando clases…</p>');
+  if (!(await renovarAgenda())) return loginAgenda();
   const r = await apiAgenda('clases_config', {});
   if (!r.ok) { if (r.error === 'sesion_invalida') return loginAgenda(); cajaClases(`<h2 id="bn-t">Clases del centro</h2><p class="bn-err">${esc(errClase(r.error))}</p>`); return; }
   listaClases = r.clases || []; pintarListaClases();

@@ -1,7 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, getDoc, doc, query, where, Timestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { getFirestore, addDoc, getDocs, getDoc, query, where, Timestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
 import { getAuth, onAuthStateChanged,signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+import { collection, doc, negocioActual } from "./tenant.js";
 
 // Tu misma configuración de Firebase (Ambas apps apuntan al mismo motor)
 const firebaseConfig = {
@@ -22,7 +23,7 @@ const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 window.cerrarSesionCliente = async function() {
     if (confirm("¿Estás seguro que querés cerrar sesión?")) {
         await signOut(auth);
-        window.location.replace('login-cliente.html');
+        window.location.replace('login-cliente.html?n=' + encodeURIComponent(negocioActual()));
     }
 }
 
@@ -109,7 +110,7 @@ async function cargarEmpresasCliente(usuarioId) {
 
 onAuthStateChanged(auth, async (usuario) => {
     if (!usuario) {
-        window.location.replace('login-cliente.html');
+        window.location.replace('login-cliente.html?n=' + encodeURIComponent(negocioActual()));
         return;
     }
     const usuarioId = usuario.email;

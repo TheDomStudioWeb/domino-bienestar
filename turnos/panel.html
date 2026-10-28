@@ -73,7 +73,7 @@ footer{text-align:center;color:var(--mut);font-size:12.5px;padding:22px 0 0;marg
 </nav>
 <script src="config.js"></script>
 <script type="module">
-import { llamar, msg as msgBase } from './api.js';
+import { llamar, msg as msgBase, sesionAgenda, guardarSesionAgenda, abrirSesionAgenda, negocioId } from './api.js';
 const $ = s => document.querySelector(s), M = $('#m');
 const E = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const MSG = { sesion_invalida: 'Su sesión venció. Ingrese de nuevo.', usuario_invalido: 'Usuario o clave incorrectos.', clave_incorrecta: 'Usuario o clave incorrectos.', demasiados_intentos: 'Demasiados intentos. Espere 10 minutos.', sin_permiso: 'No tiene permiso para esa acción.', estado_invalido: 'Ese cambio de estado no está permitido.', aun_no_es_la_hora: 'Solo se puede marcar «No vino» pasada la hora del turno.', recurso_invalido: 'Ese profesional no atiende ese servicio.', horario_invalido: 'Horario inválido.', falta_cliente: 'Falta indicar el socio.' };
@@ -91,20 +91,25 @@ const SIG = { 'Por confirmar': [['Confirmado', 'Confirmar turno']], Confirmado: 
 const ACTIVOS = ['Por confirmar', 'Confirmado', 'En sala'];
 
 const S = { tok: null, user: null, ag: null, rango: null, fecha: hoyL(), rec: '', tab: 'agenda', det: null, busy: false, nu: {}, av: null };
-try { const g = JSON.parse(localStorage.getItem('turnos_sesion') || 'null'); if (g && g.tok) { S.tok = g.tok; S.user = g.user; } } catch (e) {}
-const guardarSes = () => { try { S.tok ? localStorage.setItem('turnos_sesion', JSON.stringify({ tok: S.tok, user: S.user })) : localStorage.removeItem('turnos_sesion'); } catch (e) {} };
-const api = async (a, d = {}) => { const r = await llamar(a, { ...d, token: S.tok }); if (!r.ok && r.error === 'sesion_invalida') { S.tok = null; S.user = null; guardarSes(); pintar(); } return r; };
+try { const g = sesionAgenda(); if (g) { S.tok = g.tok; S.user = g.user; } } catch (e) {}
+const guardarSes = () => { if (S.tok) { const g = sesionAgenda() || {}; guardarSesionAgenda({ tok: S.tok, user: S.user, nid: g.nid || negocioId(), exp: g.exp, fb: g.fb }); } else guardarSesionAgenda(null); };
+const api = async (a, d = {}) => { const r = await llamar(a, { ...d, token: S.tok }); if (!r.ok && r.error === 'sesion_invalida') { S.tok = null; S.user = null; guardarSesionAgenda(null); pintar(); } return r; };
 const err = e => `<div class="err" role="alert"><b>No se pudo.</b> ${E(msg(e))}</div>`;
 const gestion = () => ['Senior', 'Mid Senior'].includes(S.user && S.user.rol);
 
 // ── Entrada ──
-function pLogin(e) {
+async function pLogin(e) {
+  if (!e && !S.salio && !(S.ultFb > Date.now() - 20000)) { // con la cuenta del Hub se entra sola
+    S.ultFb = Date.now(); M.innerHTML = '<div class="cargando">Ingresando…</div>';
+    const g = await abrirSesionAgenda(async () => { const c = await conectar(); return c.ok ? fch.idToken() : ''; });
+    if (g) { S.tok = g.tok; S.user = g.user; S.ag = null; return pintar(); }
+  }
   $('#tabs').hidden = true; $('#salir').hidden = true; $('#who').textContent = '';
   M.innerHTML = `<h2>Ingresar</h2><form id="f" novalidate>${e ? err(e) : ''}<label for="em">Correo</label><input id="em" type="email" autocomplete="username" inputmode="email"><label for="cl">Clave</label><div style="display:flex;gap:8px"><input id="cl" type="password" autocomplete="current-password" style="flex:1"><button type="button" class="btn" id="ver" aria-label="Mostrar la clave" aria-pressed="false" style="width:auto;padding:0 16px">👁</button></div><button class="btn" id="go">Ingresar</button></form>`;
   $('#ver').onclick = () => { const i = $('#cl'), v = i.type === 'password'; i.type = v ? 'text' : 'password'; $('#ver').setAttribute('aria-pressed', String(v)); $('#ver').setAttribute('aria-label', v ? 'Ocultar la clave' : 'Mostrar la clave'); i.focus(); };
-  $('#f').onsubmit = async ev => { ev.preventDefault(); $('#go').disabled = true; $('#go').textContent = 'Ingresando…'; const r = await llamar('login', { email: $('#em').value, clave: $('#cl').value }); if (!r.ok) return pLogin(r.error); S.tok = r.token; S.user = r.usuario; guardarSes(); S.ag = null; pintar(); };
+  $('#f').onsubmit = async ev => { ev.preventDefault(); $('#go').disabled = true; $('#go').textContent = 'Ingresando…'; const r = await llamar('login', { email: $('#em').value, clave: $('#cl').value }); if (!r.ok) return pLogin(r.error); S.tok = r.token; S.user = r.usuario; S.salio = false; guardarSes(); S.ag = null; pintar(); };
 }
-$('#salir').onclick = () => { S.tok = null; S.user = null; S.ag = null; S.tab = 'agenda'; S.det = null; S.nu = {}; S.rec = ''; S.fecha = hoyL(); guardarSes(); pintar(); };
+$('#salir').onclick = () => { S.salio = true; S.tok = null; S.user = null; S.ag = null; S.tab = 'agenda'; S.det = null; S.nu = {}; S.rec = ''; S.fecha = hoyL(); guardarSes(); pintar(); };
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { S.tab = b.dataset.t; S.det = null; S.hist = null; S.nu = {}; pintar(); window.scrollTo(0, 0); });
 
 async function cargarAgenda(forzar) {
@@ -319,14 +324,14 @@ async function controles() {
   const z = $('#ctl'), c = await conectar();
   if (!c.ok) { z.innerHTML = '<div class="vacio">Para ver los controles de las libretas, ingrese primero al Hub de DOMino Bienestar.</div>'; return; }
   let l = []; try { l = await fch.controles(30); } catch (e) { z.innerHTML = err('sin_permiso'); return; }
-  const link = new URL('reserva.html', location.href).href, negocio = S.ag.config.nombre;
+  const link = new URL('reserva.html?n=' + encodeURIComponent(localStorage.getItem('domino_nid') || ''), location.href).href, negocio = S.ag.config.nombre;
   z.innerHTML = `<p style="color:var(--mut);margin:0 0 8px">Vencidos y próximos 30 días, sin turno agendado.</p><div class="lista">${l.length ? l.map((x, i) => `<div class="rec"><div class="t"><b>${E(x.mascota)} · ${E(x.control)}</b>${x.dias < 0 ? '<span class="pill" style="color:var(--err);border:1px solid var(--err)">✕ Vencido</span>' : '<span class="pill es">✓ Próximo</span>'}</div><span class="msg">${E(x.dueno)} · ${E(corta(x.proxima))} · ${x.dias < 0 ? 'hace ' + (-x.dias) + ' días' : x.dias === 0 ? 'hoy' : 'en ' + x.dias + ' días'}</span><a class="btn sec" style="text-align:center;text-decoration:none;display:grid;place-items:center" target="_blank" rel="noopener" href="${E(waLink(x.tel, `Hola ${x.dueno}, le escribimos de ${negocio}: ${x.mascota} tiene pendiente su control de ${x.control.toLowerCase()} (${corta(x.proxima)}). ¿Le reservamos un turno? También puede hacerlo acá: ${link}`))}">Avisar por WhatsApp</a><button class="btn" data-ag="${i}">Agendar turno</button></div>`).join('') : '<div class="vacio">No hay controles pendientes.</div>'}</div>`;
   z.querySelectorAll('[data-ag]').forEach(b => b.onclick = () => { const x = l[+b.dataset.ag]; S.pre = { cliente: x.cid, fecha: x.proxima, mascota: x.mascota, tipo: x.tipo, nota: 'Control de ' + x.control.toLowerCase(), reg: x.reg, d: { nombre: x.dueno, telefono: x.tel }, listo: true }; S.nu = { pre: S.pre }; S.tab = 'nuevo'; pintar(); });
 }
 
 // ── Más: bloqueos y enlace de reserva ──
 function pMas(res) {
-  const link = new URL('reserva.html', location.href).href, recs = S.ag.recursos;
+  const link = new URL('reserva.html?n=' + encodeURIComponent(localStorage.getItem('domino_nid') || ''), location.href).href, recs = S.ag.recursos;
   M.innerHTML = `<h2>Enlace de reserva</h2><p style="color:var(--mut);margin:0 0 8px">Compártalo por WhatsApp o Instagram, o imprímalo como QR.</p><div class="res" style="word-break:break-all;color:var(--gold)">${E(link)}</div><button class="btn sec" id="cp">Copiar enlace</button>
   ${gestion() ? `<h2>Bloquear horarios</h2><p style="color:var(--mut);margin:0 0 4px">Feriados, vacaciones o licencias. Nadie podrá reservar en ese lapso.</p>${res || ''}<label for="bp">Profesional</label><select id="bp"><option value="*">Todos</option>${recs.map(r => `<option value="${E(r.id)}">${E(r.nombre)}</option>`).join('')}</select><div class="row2"><div><label for="bd">Desde</label><input id="bd" type="date" value="${hoyL()}"></div><div><label for="bh">Hasta</label><input id="bh" type="date" value="${hoyL()}"></div></div><label for="bm">Motivo</label><input id="bm" maxlength="80" placeholder="Feriado, vacaciones…"><button class="btn" id="bg">Bloquear</button>
   <h2>Bloqueos vigentes</h2><div class="lista">${S.ag.bloqueos.filter(b => String(b.hasta).slice(0, 10) >= hoyL()).map(b => `<div class="rec"><b>${E(b.motivo || 'Bloqueo')}</b><span class="msg">${E(b.recurso_id === '*' ? 'Todos' : recDe(b.recurso_id).nombre || b.recurso_id)} · ${E(String(b.desde).slice(0, 10))} a ${E(String(b.hasta).slice(0, 10))}</span></div>`).join('') || '<div class="vacio">No hay bloqueos cargados.</div>'}</div>` : ''}`;

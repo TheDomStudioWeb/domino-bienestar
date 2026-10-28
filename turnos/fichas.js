@@ -12,18 +12,20 @@ export async function conectar() {
       const a = app.initializeApp(CFG), au = auth.getAuth(a);
       const user = await new Promise(res => { const off = auth.onAuthStateChanged(au, u => { off(); res(u); }); setTimeout(() => res(null), 6000); });
       if (!user) return { ok: false, motivo: 'sin_sesion' };
-      F = { fs, db: fs.getFirestore(a), email: String(user.email || '').toLowerCase() };
+      F = { fs, user, db: fs.getFirestore(a), email: String(user.email || '').toLowerCase() };
       return { ok: true, email: F.email };
     } catch (e) { console.warn('Fichas: no disponible', e); return { ok: false, motivo: 'sin_firebase' }; }
   })();
   return estado;
 }
+export async function idToken() { const c = await conectar(); return c.ok && F.user ? F.user.getIdToken() : ''; }
+const NID = () => { try { return window.DOMINO_NID || localStorage.getItem('domino_nid') || ''; } catch (e) { return ''; } };
 const dig = s => String(s || '').replace(/\D/g, '');
 const norm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/\s+/g, ' ').trim();
 
 // Todas las fichas activas (para sugerir y para buscar a mano).
 export async function todas() {
-  const { fs, db } = F, snap = await fs.getDocs(fs.query(fs.collection(db, 'clients'), fs.where('estado', '==', 'activo'))), out = [];
+  const { fs, db } = F, snap = await fs.getDocs(fs.query(fs.collection(db, 'negocios', NID(), 'clients'), fs.where('estado', '==', 'activo'))), out = [];
   snap.forEach(d => { const c = d.data(); out.push({ id: d.id, nombre: String(c.nombre_empresa || ''), telefono: String(c.telefono || ''), mascotas: (c.mascotas || []).map(m => m.nombre).join(', ') }); });
   return out.sort((a, b) => a.nombre.localeCompare(b.nombre));
 }
@@ -43,16 +45,16 @@ export function buscar(lista, q) {
   return lista.filter(c => norm(c.nombre).includes(n) || (d.length >= 3 && dig(c.telefono).includes(d)) || norm(c.mascotas).includes(n)).slice(0, 8);
 }
 export async function nombreDe(id) {
-  try { const { fs, db } = F; const s = await fs.getDoc(fs.doc(db, 'clients', id)); return s.exists() ? (s.data().nombre_empresa || '') : ''; } catch (e) { return ''; }
+  try { const { fs, db } = F; const s = await fs.getDoc(fs.doc(db, 'negocios', NID(), 'clients', id)); return s.exists() ? (s.data().nombre_empresa || '') : ''; } catch (e) { return ''; }
 }
 export async function crearFicha({ nombre, tel, email, sujeto_nombre, sujeto_tipo }) {
   const { fs, db } = F;
   const datos = { nombre_empresa: String(nombre).trim(), cuit: '', estado: 'activo', fecha_creacion: new Date().toISOString(), usuario_id: '', telefono: String(tel || '').trim(), email_contacto: String(email || '').trim().toLowerCase(), origen: 'turnos', mascotas: sujeto_nombre ? [{ nombre: sujeto_nombre, tipo: sujeto_tipo || 'Perro' }] : [] };
-  const r = await fs.addDoc(fs.collection(db, 'clients'), datos); return { id: r.id, nombre: datos.nombre_empresa };
+  const r = await fs.addDoc(fs.collection(db, 'negocios', NID(), 'clients'), datos); return { id: r.id, nombre: datos.nombre_empresa };
 }
 export async function sumarMascota(id, sujeto_nombre, sujeto_tipo) {
   if (!sujeto_nombre) return;
-  const { fs, db } = F, ref = fs.doc(db, 'clients', id), s = await fs.getDoc(ref); if (!s.exists()) return;
+  const { fs, db } = F, ref = fs.doc(db, 'negocios', NID(), 'clients', id), s = await fs.getDoc(ref); if (!s.exists()) return;
   const ya = (s.data().mascotas || []).some(m => norm(m.nombre) === norm(sujeto_nombre));
   if (!ya) await fs.updateDoc(ref, { mascotas: fs.arrayUnion({ nombre: sujeto_nombre, tipo: sujeto_tipo || 'Perro' }) });
 }
@@ -60,20 +62,20 @@ export async function sumarMascota(id, sujeto_nombre, sujeto_tipo) {
 export const mismaPersona = (a, b) => { const x = norm(a), y = norm(b); return !!x && !!y && (x === y || x.includes(y) || y.includes(x)); };
 // Otras personas que usan la ficha (familiares, vecinos...). El responsable es el nombre de la ficha.
 export async function sumarPersona(id, nombre, relacion, tel) {
-  const { fs, db } = F, ref = fs.doc(db, 'clients', id), s = await fs.getDoc(ref); if (!s.exists()) return;
+  const { fs, db } = F, ref = fs.doc(db, 'negocios', NID(), 'clients', id), s = await fs.getDoc(ref); if (!s.exists()) return;
   const c = s.data(); if (mismaPersona(c.nombre_empresa, nombre) || (c.personas || []).some(p => mismaPersona(p.nombre, nombre))) return;
   await fs.updateDoc(ref, { personas: fs.arrayUnion({ nombre: String(nombre).trim(), relacion: String(relacion || '').trim(), telefono: String(tel || '').trim() }) });
 }
 
 export async function datosDe(id) {
-  try { const { fs, db } = F; const s = await fs.getDoc(fs.doc(db, 'clients', id)); if (!s.exists()) return null; const c = s.data(); return { nombre: c.nombre_empresa || '', telefono: c.telefono || '', email: c.email_contacto || '' }; } catch (e) { return null; }
+  try { const { fs, db } = F; const s = await fs.getDoc(fs.doc(db, 'negocios', NID(), 'clients', id)); if (!s.exists()) return null; const c = s.data(); return { nombre: c.nombre_empresa || '', telefono: c.telefono || '', email: c.email_contacto || '' }; } catch (e) { return null; }
 }
 const hoyISO = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 const difDias = s => Math.round((new Date(s + 'T12:00:00') - new Date(hoyISO() + 'T12:00:00')) / 86400000);
 // Controles de la libreta que vencieron (hasta 90 días atrás) o vencen en los próximos `ventana` días, sin turno ya agendado
 // y sin un registro más nuevo del mismo tipo para esa mascota.
 export async function controles(ventana = 30) {
-  const { fs, db } = F, snap = await fs.getDocs(fs.query(fs.collection(db, 'clients'), fs.where('estado', '==', 'activo'))), out = [];
+  const { fs, db } = F, snap = await fs.getDocs(fs.query(fs.collection(db, 'negocios', NID(), 'clients'), fs.where('estado', '==', 'activo'))), out = [];
   snap.forEach(d => { const c = d.data(); (c.mascotas || []).forEach(m => { const ls = m.libreta || []; ls.forEach(e => {
     if (!e.proxima || e.agendado) return; const n = difDias(e.proxima); if (n > ventana || n < -90) return;
     if (ls.some(o => o !== e && o.tipo === e.tipo && (o.fecha || '') > (e.fecha || ''))) return;
@@ -82,7 +84,7 @@ export async function controles(ventana = 30) {
   return out.sort((a, b) => a.proxima.localeCompare(b.proxima));
 }
 export async function marcarAgendado(cid, mascota, regId, fecha) {
-  const { fs, db } = F, ref = fs.doc(db, 'clients', cid), s = await fs.getDoc(ref); if (!s.exists()) return;
+  const { fs, db } = F, ref = fs.doc(db, 'negocios', NID(), 'clients', cid), s = await fs.getDoc(ref); if (!s.exists()) return;
   const m = (s.data().mascotas || []).map(x => x.nombre === mascota ? { ...x, libreta: (x.libreta || []).map(e => e.id === regId ? { ...e, agendado: fecha } : e) } : x);
   await fs.updateDoc(ref, { mascotas: m });
 }
