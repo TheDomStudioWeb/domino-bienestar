@@ -94,6 +94,10 @@ function sesionFb_(p) {
 function crearNegocio_(p) {
   const email = emailDeIdToken_(p.id_token);
   if (!fsGet_('superadmins/' + encodeURIComponent(email), p.id_token)) throw falla_('sin_permiso');
+  try { return crearNegocioOk_(p); }
+  catch (e) { if (e && e.codigo) throw e; console.error(e && e.stack || e); throw falla_('alta_fallo: ' + String(e && e.message || e).slice(0, 160)); } // ya es superadmin: se le muestra el motivo
+}
+function crearNegocioOk_(p) {
   const nid = idNegocio_(p.nid); if (!nid) throw falla_('negocio_invalido');
   const nombre = limpiar_(p.nombre, 80) || nid;
   const lock = LockService.getScriptLock(); if (!lock.tryLock(30000)) throw falla_('ocupado');
@@ -774,5 +778,11 @@ function quitarClase_(p, u) {
     sh.getRange(fila, h.indexOf('activo') + 1).setValue('no');
     return { ok: true };
   } finally { lock.releaseLock(); invalidarHoja_(HOJAS.servicios); }
+}
+/** Ejecutar UNA vez a mano (Ejecutar > autorizar) después de actualizar el código: pide los permisos de hojas y de conexión externa. */
+function autorizar() {
+  SpreadsheetApp.getActiveSpreadsheet().getName();
+  UrlFetchApp.fetch('https://firestore.googleapis.com/', { muteHttpExceptions: true });
+  console.log('Permisos autorizados. Ahora: Implementar > Administrar implementaciones > Nueva versión.');
 }
 function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
