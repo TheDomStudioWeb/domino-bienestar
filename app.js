@@ -721,6 +721,14 @@ async function iniciarApp() {
 
         document.getElementById('main-content').style.display = 'block';
         aplicarPermisosPorRol(rolUsuario);
+        // Solo para las cuentas de The DOM (superadmins): acceso directo a la pantalla de alta de centros.
+        try {
+            const sa = await getDoc(doc(db, "superadmins", String(usuario.email || '').toLowerCase()));
+            if (sa.exists() && !document.getElementById('nav-centros')) {
+                const a = document.createElement('a'); a.id = 'nav-centros'; a.href = 'centros/'; a.textContent = 'Centros (alta)';
+                const salida = document.getElementById('nav-logout'); salida.parentNode.insertBefore(a, salida);
+            }
+        } catch (e) { /* no es superadmin */ }
 
         // Primero el cache de empresas (lo usan tareas y prioridades), después el resto
         await cargarCacheClientes();

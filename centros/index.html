@@ -65,7 +65,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, getDocs, collection, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 const CFG = { apiKey: "AIzaSyB0y7cFZ-HnGrasLsg-HTeWXvenZSZzSpQ", authDomain: "domino-bienestar.firebaseapp.com", projectId: "domino-bienestar", storageBucket: "domino-bienestar.firebasestorage.app", messagingSenderId: "68194219142", appId: "1:68194219142:web:cf68e1a910584c963f4d07" };
-const app = initializeApp(CFG, 'centros'), au = getAuth(app)  /* app con nombre propio: su sesión no se mezcla con la del Hub abierto en otra pestaña */, db = getFirestore(app), $ = id => document.getElementById(id);
+const app = initializeApp(CFG), au = getAuth(app), db = getFirestore(app), $ = id => document.getElementById(id);
 const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const slug = s => String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
 const msg = (t, k) => { const m = $('n-msg'); m.textContent = t; m.className = 'msg ' + (k || ''); };
@@ -83,7 +83,7 @@ $('salir').onclick = () => signOut(au);
 onAuthStateChanged(au, async u => {
   if (!u) { $('s-login').hidden = false; $('s-app').hidden = true; return; }
   let es = false; try { es = (await getDoc(doc(db, 'superadmins', u.email.toLowerCase()))).exists(); } catch (e) {}
-  if (!es) { $('l-er').textContent = 'Esta cuenta no es de superadmin.'; await signOut(au); return; }
+  if (!es) { $('s-login').hidden = false; $('s-app').hidden = true; $('l-er').textContent = 'La cuenta con la que está dentro (' + u.email + ') no es de superadmin. Ingrese con otra cuenta (no se cierra la sesión del Hub en esta pestaña hasta que toque Ingresar).'; return; }
   $('s-login').hidden = true; $('s-app').hidden = false; listar();
 });
 
