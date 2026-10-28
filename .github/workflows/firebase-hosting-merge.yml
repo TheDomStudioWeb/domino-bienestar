@@ -1,0 +1,18 @@
+# Publica la app en https://domino-bienestar.web.app cada vez que se sube un cambio a main.
+# Necesita el secreto FIREBASE_SERVICE_ACCOUNT_DOMINO_BIENESTAR (lo crea «firebase init hosting:github»).
+name: Publicar en Firebase Hosting
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: FirebaseExtended/action-hosting-deploy@v0
+        with:
+          repoToken: ${{ secrets.GITHUB_TOKEN }}
+          firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_DOMINO_BIENESTAR }}
+          channelId: live
+          projectId: domino-bienestar

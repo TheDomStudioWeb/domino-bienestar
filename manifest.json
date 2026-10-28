@@ -1,10 +1,10 @@
 {
     "name": "DOMino Bienestar",
     "short_name": "Bienestar",
-    "id": "/domino-bienestar/",
+    "id": "./",
     "lang": "es",
     "description": "Gestión, clases y turnos para centros de bienestar",
-    "start_url": "/domino-bienestar/index.html",
+    "start_url": "./index.html",
     "display": "standalone",
     "background_color": "#0a0a0a",
     "theme_color": "#0a0a0a",
@@ -15,5 +15,5 @@
             "type": "image/png"
         }
     ],
-    "scope": "/domino-bienestar/"
+    "scope": "./"
 }

@@ -1,0 +1,27 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "**/.*",
+      "**/node_modules/**",
+      "alta/**",
+      "turnos/test/**",
+      "turnos/apps-script/**",
+      "**/*.md",
+      "**/*.xlsx"
+    ],
+    "headers": [
+      {
+        "source": "**/@(sw.js|manifest.json|turnos/config.js)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          }
+        ]
+      }
+    ]
+  }
+}
