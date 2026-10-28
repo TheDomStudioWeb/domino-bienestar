@@ -375,7 +375,8 @@ function formClase(c, actividad) {
     <label class="bn-l" for="fc-p">Profesor/a</label><input type="text" id="fc-p" maxlength="60" placeholder="Ej. Ana Gómez" value="${esc((c && c.profesor) || '')}">
     <div class="bn-vence"><label>Cupo (personas)<input type="number" id="fc-c" min="2" max="500" inputmode="numeric" value="${esc((c && c.cupo) || 15)}"></label>
     <label>Duración<select id="fc-d">${durs.map((m) => `<option value="${m}"${((c && c.duracion_min) || 60) === m ? ' selected' : ''}>${m} min</option>`).join('')}</select></label></div>
-    <label class="bn-l" for="fc-s">Sala (opcional)</label><input type="text" id="fc-s" maxlength="60" placeholder="Ej. Salón de baile" value="${esc((c && c.sala) || '')}">
+    <label class="bn-l" for="fc-s">Sala o salón</label><input type="text" id="fc-s" maxlength="60" list="fc-salas" placeholder="Ej. Salón de baile" value="${esc((c && c.sala) || '')}"><datalist id="fc-salas">${[...new Set(listaClases.map((x) => x.sala).filter(Boolean))].map((n) => `<option value="${esc(n)}">`).join('')}</datalist>
+    <small style="display:block;margin-top:4px;color:var(--text-muted,#a8a396)">Obligatoria si la clase coincide en día y horario con otra. Dos clases no pueden darse a la vez en la misma sala.</small>
     <label class="bn-l">Días y hora de inicio</label><div id="fc-hs">${(filas.length ? filas : [['19:00', []]]).map(([h, ds]) => filaHorario(ds, h)).join('')}</div>
     <button type="button" class="bn-btn sec" id="fc-mas" style="margin-top:8px">+ Otro horario</button>
     <label class="bn-act" style="margin-top:14px"><input type="checkbox" id="fc-pub"${!c || c.publico ? ' checked' : ''}><span><b>Mostrar en la página de reservas</b><small>Si la destilda, solo se puede anotar a alguien desde la agenda.</small></span></label>
@@ -398,7 +399,16 @@ function formClase(c, actividad) {
     if (c) datos.servicio_id = c.servicio_id;
     const b = $('fc-ok'); b.disabled = true; b.textContent = 'Guardando…';
     const r = await apiAgenda('guardar_clase', datos);
-    if (!r.ok) { if (r.error === 'sesion_invalida') return loginAgenda('Vuelva a ingresar para guardar la clase.'); b.disabled = false; b.textContent = 'Guardar clase'; return err(errClase(r.error)); }
+    if (!r.ok) {
+      if (r.error === 'sesion_invalida') return loginAgenda('Vuelva a ingresar para guardar la clase.');
+      b.disabled = false; b.textContent = 'Guardar clase';
+      if (r.error === 'falta_sala' || r.error === 'sala_ocupada') {
+        const cuando = `el ${nomDia(r.dia).toLowerCase()} a las ${r.hora}`;
+        $('fc-s').focus(); $('fc-s').style.borderColor = '#ff9b93';
+        return err(r.error === 'falta_sala' ? `${cuando} ya está «${r.clase}»${r.sala ? ' en ' + r.sala : ''}. Indique en qué sala se va a dar esta clase.` : `En «${r.sala}» ya está «${r.clase}» ${cuando}. Elija otra sala u otro horario.`);
+      }
+      return err(errClase(r.error));
+    }
     await adminClases(); refrescarHubBienestar();
   };
 }

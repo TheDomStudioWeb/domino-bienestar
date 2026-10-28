@@ -31,6 +31,7 @@ Dirección (todo) · Profesor/a o profesional (ve su propia agenda) · Recepció
 - Muestra las clases agrupadas por actividad (Clases grupales, Yoga y pilates, Otras clases) con profesor, cupo, duración y horarios.
 - **+ Agregar clase**: nombre (Salsa, Spinning…), profesor/a, cupo, duración, sala (opcional), días y hora de inicio (se pueden sumar varios horarios) y si se muestra en la página de reservas.
 - **Editar**: cambia profesor, cupo, duración u horarios, también de las clases que venían cargadas. **Quitar**: la clase deja de aparecer; los turnos ya tomados no se borran.
+- Dos clases no pueden darse a la vez en la misma sala. Si una clase nueva coincide en día y horario con otra, la app pide indicar la sala; si es la misma sala, no deja guardar (por ejemplo, un gimnasio con un solo salón).
 - Los cambios se ven enseguida en la agenda, en la página de reservas y en «Clases de hoy».
 
 ## Cuota y apto médico de cada socio

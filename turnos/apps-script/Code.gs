@@ -605,11 +605,37 @@ function datosClase_(p, c) {
   if (!hs.length) throw falla_('faltan_horarios');
   return { nombre: nombre, cupo: cupo, dur: dur, hs: hs, profesor: limpiar_(p.profesor, 60), sala: limpiar_(p.sala, 60), publico: p.publico === false ? 'no' : 'si', actividad: /^[a-z0-9_]{2,30}$/.test(String(p.actividad || '')) ? String(p.actividad) : 'propia' };
 }
+// Dos clases no pueden coincidir en día y horario en la misma sala. Si coincide con otra clase y no se indicó sala, se pide la sala.
+function choqueSala_(d, propioSid) {
+  const recs = {}; leerHojaDirecto_(HOJAS.recursos).forEach(r => { recs[String(r.id)] = r; });
+  const hs = leerHojaDirecto_(HOJAS.horarios), norm = v => String(v || '').trim().toLowerCase();
+  let propioRid = '';
+  const otras = leerHojaDirecto_(HOJAS.servicios).filter(sv => String(sv.activo).toLowerCase() !== 'no' && cupoDe_(sv) > 1).filter(sv => { if (String(sv.id) === propioSid) { propioRid = lista_(sv.recursos)[0] || ''; return false; } return true; });
+  const salaNueva = d.sala || (propioRid && recs[propioRid] ? recs[propioRid].nombre : '');
+  for (const sv of otras) {
+    const rid = lista_(sv.recursos)[0] || '', sala = (recs[rid] || {}).nombre || '';
+    for (const h of hs.filter(x => String(x.recurso_id) === rid)) {
+      const ini = aMin_('2026-01-05', h.desde), fin = ini + Number(sv.duracion_min);
+      for (const n of d.hs) {
+        if (Number(h.dia_semana) !== n.dia) continue;
+        const a = aMin_('2026-01-05', n.desde), b = aMin_('2026-01-05', n.hasta);
+        if (a < fin && b > ini) {
+          const info = { clase: sv.nombre, sala: sala, dia: n.dia, hora: String(h.desde) };
+          if (!salaNueva) return Object.assign({ error: 'falta_sala' }, info);
+          if (norm(salaNueva) === norm(sala)) return Object.assign({ error: 'sala_ocupada' }, info);
+        }
+      }
+    }
+  }
+  return null;
+}
 function guardarClase_(p, u) {
   if (ROLES_GESTION.indexOf(u.rol) < 0) throw falla_('sin_permiso');
   const c = config_(), d = datosClase_(p, c);
   const lock = LockService.getScriptLock(); if (!lock.tryLock(15000)) throw falla_('sistema_ocupado');
   try {
+    const choque = choqueSala_(d, String(p.servicio_id || ''));
+    if (choque) return Object.assign({ ok: false }, choque);
     const shS = obtenerHoja_(HOJAS.servicios), hS = asegurarColumnas_(shS, COL_SERVICIOS);
     const shR = obtenerHoja_(HOJAS.recursos), hR = asegurarColumnas_(shR, COL_RECURSOS);
     let sid = String(p.servicio_id || ''), rid;
