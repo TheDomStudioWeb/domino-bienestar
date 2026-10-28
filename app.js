@@ -689,6 +689,10 @@ async function iniciarApp() {
         try { perfilSnap = await getDoc(doc(db, "users", String(usuario.email || '').toLowerCase())); } catch (e) { console.error(e); }
         const salir = async (texto) => { alert(texto); await signOut(auth); window.location.replace('login.html'); };
 
+        // Cuenta de The DOM (superadmin) sin centro propio: va directo a la pantalla de Centros.
+        if (!perfilSnap || !perfilSnap.exists() || !(perfilSnap.data() || {}).negocio_id) {
+            try { const sa = await getDoc(doc(db, "superadmins", String(usuario.email || '').toLowerCase())); if (sa.exists()) { window.location.replace('centros/'); return; } } catch (e) { /* no es superadmin */ }
+        }
         if (!perfilSnap || !perfilSnap.exists()) return salir("Usuario sin perfil asignado. Contacte al administrador.");
         const perfil = perfilSnap.data();
         if (perfil.activo === false) return salir("Tu acceso está dado de baja. Contactá a la Dirección del centro.");
