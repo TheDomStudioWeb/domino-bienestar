@@ -92,7 +92,7 @@ function despachar_(p) {
   if (a === 'login') return login_(p.email, p.clave);
   const u = validarToken_(p.token);
   if (!u) return { ok: false, error: 'sesion_invalida' };
-  const PRIV = { agenda: agenda_, historial: historial_, vincular_cliente: vincularCliente_, crear_turno: crearTurno_, cambiar_estado: cambiarEstado_, reprogramar: reprogramar_, guardar_bloqueo: guardarBloqueo_, recordatorios_manana: recordatoriosManana_, marcar_avisado: marcarAvisado_ };
+  const PRIV = { agenda: agenda_, historial: historial_, vincular_cliente: vincularCliente_, crear_turno: crearTurno_, cambiar_estado: cambiarEstado_, reprogramar: reprogramar_, guardar_bloqueo: guardarBloqueo_, guardar_actividad: guardarActividad_, quitar_actividad: quitarActividad_, recordatorios_manana: recordatoriosManana_, marcar_avisado: marcarAvisado_ };
   if (!PRIV[a]) return { ok: false, error: 'accion_desconocida' };
   return PRIV[a](p, u);
 }
@@ -576,5 +576,49 @@ function cargarActividades() {
   } finally { lock.releaseLock(); HOJAS_CACHE.forEach(invalidarHoja_); }
   Logger.log('Listo. Nuevos: ' + JSON.stringify(nuevos));
   return nuevos;
+}
+
+// ── Actividades propias del centro (las que no están en el catálogo) ──
+// Las carga la Dirección desde el Hub (Cambiar actividades → Cargar nueva actividad). Crea la sala o el responsable, el servicio y sus horarios.
+// Clase grupal: cupo de 2 a 500 y cada horario es UNA clase que empieza en «desde». Turno individual: horario de atención, un turno por tramo.
+function guardarActividad_(p, u) {
+  if (ROLES_GESTION.indexOf(u.rol) < 0) throw falla_('sin_permiso');
+  const c = config_(), clase = p.tipo === 'clase';
+  const nombre = limpiar_(p.nombre, 60); if (nombre.length < 3) throw falla_('falta_nombre_actividad');
+  const cupo = clase ? Math.floor(Number(p.cupo)) : '';
+  if (clase && !(cupo >= 2 && cupo <= 500)) throw falla_('cupo_invalido');
+  const dur = Math.floor(Number(p.duracion_min));
+  if (!(dur >= c.paso_min && dur <= 480 && dur % c.paso_min === 0)) throw falla_('duracion_invalida');
+  const resp = limpiar_(p.responsable, 60) || (clase ? 'Sala de ' + nombre : nombre);
+  const hs = (Array.isArray(p.horarios) ? p.horarios : []).slice(0, 30);
+  if (!hs.length) throw falla_('faltan_horarios');
+  hs.forEach(h => {
+    const dias = Array.isArray(h.dias) ? h.dias.map(Number) : [];
+    if (!validaHora_(h.desde) || !validaHora_(h.hasta) || String(h.hasta) <= String(h.desde) || !dias.length || dias.some(d => !(d >= 0 && d <= 6) || d % 1)) throw falla_('horario_invalido');
+    if (aMin_('2026-01-05', h.hasta) - aMin_('2026-01-05', h.desde) < dur) throw falla_('horario_corto');
+  });
+  const lock = LockService.getScriptLock(); if (!lock.tryLock(15000)) throw falla_('sistema_ocupado');
+  try {
+    const rec = new Set(leerHojaDirecto_(HOJAS.recursos).map(r => String(r.id))), srv = new Set(leerHojaDirecto_(HOJAS.servicios).map(r => String(r.id)));
+    const slug = nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 24) || 'actividad';
+    let n = 1, suf = 'P_' + slug; while (rec.has('R_' + suf) || srv.has('S_' + suf)) suf = 'P_' + slug + '_' + (++n);
+    const rid = 'R_' + suf, sid = 'S_' + suf;
+    agregarFila_(HOJAS.recursos, COL_RECURSOS, { id: rid, nombre: resp, tipo: clase ? 'sala' : 'profesional', color: COLORES_[rec.size % COLORES_.length], usuario_email: '', activo: 'si' });
+    agregarFila_(HOJAS.servicios, COL_SERVICIOS, { id: sid, nombre: nombre, duracion_min: dur, recursos: rid, publico: p.publico === false ? 'no' : 'si', activo: 'si', cupo: cupo, actividad: 'propia' });
+    hs.forEach(h => h.dias.map(Number).forEach(d => agregarFila_(HOJAS.horarios, COL_HORARIOS, { recurso_id: rid, dia_semana: d, desde: h.desde, hasta: h.hasta })));
+    return { ok: true, servicio_id: sid, recurso_id: rid };
+  } finally { lock.releaseLock(); HOJAS_CACHE.forEach(invalidarHoja_); }
+}
+// Quitar una actividad propia: la deja inactiva (no borra turnos ni historial). Solo actividades propias (id S_P_…).
+function quitarActividad_(p, u) {
+  if (ROLES_GESTION.indexOf(u.rol) < 0) throw falla_('sin_permiso');
+  const sid = String(p.servicio_id || ''); if (!/^S_P_[a-z0-9_]+$/.test(sid)) throw falla_('servicio_invalido');
+  const lock = LockService.getScriptLock(); if (!lock.tryLock(15000)) throw falla_('sistema_ocupado');
+  try {
+    const sh = obtenerHoja_(HOJAS.servicios), h = asegurarColumnas_(sh, COL_SERVICIOS), fila = buscarFila_(sh, sid);
+    if (fila < 0) throw falla_('servicio_invalido');
+    sh.getRange(fila, h.indexOf('activo') + 1).setValue('no');
+    return { ok: true };
+  } finally { lock.releaseLock(); invalidarHoja_(HOJAS.servicios); }
 }
 function json_(o) { return ContentService.createTextOutput(JSON.stringify(o)).setMimeType(ContentService.MimeType.JSON); }
