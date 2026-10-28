@@ -74,6 +74,10 @@ T('sincronizar_actividades carga recursos y servicios en la planilla del centro'
   assert(m.extra[l1].servicios.length > 1); assert.strictEqual(m.extra[l2].servicios.length, 1);
   assert.strictEqual(m.llamar({ accion: 'sincronizar_actividades', token: s1.token, actividades: ['nada'] }).error, 'sin_actividades');
 });
+T('sincronizar_actividades copia el nombre y teléfono del centro a la planilla (lo que ve quien reserva)', () => {
+  const { m, s1 } = dosCentros(); assert(m.llamar({ accion: 'sincronizar_actividades', token: s1.token, actividades: ['gimnasio'], nombre: 'Gimnasio Real', telefono: '261 555 0000' }).ok);
+  assert.strictEqual(m.llamar({ accion: 'config_publica', negocio: 'gym-uno' }).negocio.nombre, 'Gimnasio Real');
+});
 T('recordatorios: recorre todos los centros', () => {
   const { m } = dosCentros(); const l1 = m.libros.negocios.find(f => f[0] === 'gym-uno')[1], l2 = m.libros.negocios.find(f => f[0] === 'gym-dos')[1]; preparar(m, l1); preparar(m, l2);
   reservar(m, 'gym-uno', { email: 'a@a.test', fecha: '2026-10-27' }); reservar(m, 'gym-dos', { email: 'b@b.test', fecha: '2026-10-27', tel: '2615554444' });

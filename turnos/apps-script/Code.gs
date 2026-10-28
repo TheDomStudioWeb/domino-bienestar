@@ -118,9 +118,13 @@ function sincronizarActividades_(p, u) {
   if (ROLES_GESTION.indexOf(u.rol) < 0) throw falla_('sin_permiso');
   const ids = (Array.isArray(p.actividades) ? p.actividades : []).map(x => String(x)).filter(x => (CATALOGO_.actividades || []).some(a => a.id === x));
   if (!ids.length) throw falla_('sin_actividades');
-  const sh = obtenerHoja_(HOJAS.config), d = sh.getDataRange().getValues();
-  let fila = -1; for (let i = 1; i < d.length; i++) if (String(d[i][0]).trim() === 'actividades') fila = i + 1;
-  if (fila > 0) sh.getRange(fila, 2).setValue(ids.join(',')); else sh.appendRow(['actividades', ids.join(',')]);
+  const sh = obtenerHoja_(HOJAS.config);
+  const poner = (clave, valor) => { const d = sh.getDataRange().getValues(); let fila = -1; for (let i = 1; i < d.length; i++) if (String(d[i][0]).trim() === clave) fila = i + 1; if (fila > 0) sh.getRange(fila, 2).setValue(valor); else sh.appendRow([clave, valor]); };
+  poner('actividades', ids.join(','));
+  // El nombre y el teléfono que carga el centro en el Hub son los que ve quien reserva.
+  const nom = limpiar_(p.nombre, 80), tel = limpiar_(p.telefono, 40);
+  if (nom.length >= 2) poner('nombre', valorCelda_('nombre', nom));
+  if (tel) poner('telefono', valorCelda_('telefono', tel));
   invalidarHoja_(HOJAS.config);
   return { ok: true, nuevos: cargarActividades() };
 }

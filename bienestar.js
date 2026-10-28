@@ -155,7 +155,7 @@ function asistente(tabInicial) {
       await setDoc(doc(D().db, 'config', 'negocio'), datos, { merge: true });
       negocio = Object.assign({}, negocio, datos); window.DOMINO_NEGOCIO = negocio;
       // La agenda de turnos del centro se arma sola con las actividades elegidas (recursos, servicios y horarios típicos; no pisa lo ya cargado).
-      if (window.TURNOS_API) apiAgenda('sincronizar_actividades', { actividades: acts }).then((r) => { if (!r.ok) console.warn('Agenda: no se pudieron cargar las actividades', r.error); }).catch(() => {});
+      if (window.TURNOS_API) apiAgenda('sincronizar_actividades', { actividades: acts, nombre: nom, telefono: tel }).then((r) => { if (!r.ok) console.warn('Agenda: no se pudieron cargar las actividades', r.error); }).catch(() => {});
       cerrar(); pintarPanel(true); aplicarLogo(); if (nom) document.querySelectorAll('.brand-name b').forEach((el) => { el.textContent = nom; });
     } catch (e) { console.error(e); $('bn-ok').disabled = false; $('bn-ok').textContent = 'Guardar'; err('No se pudo guardar. Revise su conexión e intente de nuevo.'); }
   };
