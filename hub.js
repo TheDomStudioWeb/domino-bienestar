@@ -35,15 +35,15 @@ const icono = (k) => `<svg viewBox="0 0 24 24" width="26" height="26" fill="none
 // Catálogo del Hub: cada función de DOMino Profesional, en un lugar
 // ---------------------------------------------------------------
 const GRUPOS = [
-  { titulo: 'Gestión del estudio', items: [
-    { k: 'expedientes', t: 'Clientes', d: 'Empresas, procesos y documentos. Desde acá también se da de alta o baja a un cliente.', roles: ['senior', 'midsenior'], go: () => navegarA('expedientes') },
-    { k: 'kanban', t: 'Tareas', d: 'Todas las tareas del estudio, por estado.', roles: ['senior', 'midsenior'], go: () => navegarA('kanban') },
+  { titulo: 'Gestión del centro', items: [
+    { k: 'expedientes', t: 'Socios', d: 'Fichas de socios, con su contacto, sus turnos y sus seguimientos. Desde acá también se da de alta o baja a un socio.', roles: ['senior', 'midsenior'], go: () => navegarA('expedientes') },
+    { k: 'kanban', t: 'Seguimientos', d: 'Cuotas por vencer, aptos médicos y pendientes con los socios, por estado.', roles: ['senior', 'midsenior'], go: () => navegarA('kanban') },
     { k: 'tareas', t: 'Mis Tareas', d: 'Lo que tenés asignado, por estado.', roles: ['asistente'], go: () => navegarA('mis-tareas') }
   ]},
   { titulo: 'Documentos', items: [
-    { k: 'buzon', t: 'Buzón documental', d: 'Cargar lo recibido y enviar documentación al cliente.', roles: ['senior', 'midsenior'], go: () => abrirExpedientes('buzon') },
-    { k: 'pendientes', t: 'Documentos pendientes', d: 'Lo que subieron los clientes y falta procesar.', roles: ['senior', 'midsenior'], badge: 'docs', go: () => abrirModalDocsPendientes() },
-    { k: 'portal', t: 'Portal del cliente', d: 'Cómo ve y envía documentos su cliente.', roles: ['senior', 'midsenior'], go: () => window.open('portal-cliente.html', '_blank', 'noopener') }
+    { k: 'buzon', t: 'Buzón documental', d: 'Cargar lo recibido y enviar documentación al socio.', roles: ['senior', 'midsenior'], go: () => abrirExpedientes('buzon') },
+    { k: 'pendientes', t: 'Documentos pendientes', d: 'Lo que subieron los socios y falta revisar.', roles: ['senior', 'midsenior'], badge: 'docs', go: () => abrirModalDocsPendientes() },
+    { k: 'portal', t: 'Portal del socio', d: 'Cómo ve y envía documentos el socio.', roles: ['senior', 'midsenior'], go: () => window.open('portal-cliente.html', '_blank', 'noopener') }
   ]},
   { titulo: 'Plazos y equipo', items: [
     { k: 'calendario', t: 'Calendario', d: 'Vencimientos del mes, día por día.', roles: ['senior', 'midsenior', 'asistente'], go: () => navegarA('calendario') },
@@ -62,7 +62,7 @@ const MODULOS = window.DOMINO_MODULOS || {};
 if (MODULOS.turnos) {
   GRUPOS.push({ titulo: 'Agenda y turnos', items: [
     { k: 'turnos', t: 'Agenda de turnos', d: 'Turnos del día, solicitudes por confirmar y avisos de mañana.', roles: ['senior', 'midsenior', 'asistente'], go: () => window.open('turnos/panel.html', '_blank', 'noopener') },
-    { k: 'reserva', t: 'Página de reserva', d: 'La página donde sus clientes piden turno. Compártala por WhatsApp o redes.', roles: ['senior', 'midsenior', 'asistente'], go: () => window.open('turnos/reserva.html', '_blank', 'noopener') }
+    { k: 'reserva', t: 'Página de reserva', d: 'La página donde los socios reservan clases y turnos. Compártala por WhatsApp o redes.', roles: ['senior', 'midsenior', 'asistente'], go: () => window.open('turnos/reserva.html', '_blank', 'noopener') }
   ]});
 }
 // Perfil por rubro (modulos.js): oculta, renombra y ordena según lo que necesita cada rubro.
@@ -72,7 +72,7 @@ if (MODULOS.turnos) {
   for (let i = GRUPOS.length - 1; i >= 0; i--) if (!GRUPOS[i].items.length) GRUPOS.splice(i, 1);
   if (orden.length) GRUPOS.sort((a, b) => { const x = orden.indexOf(a.titulo), y = orden.indexOf(b.titulo); return (x < 0 ? 99 : x) - (y < 0 ? 99 : y); });
   if ((window.DOMINO_FUNC || {}).documentos === false) GRUPOS.forEach((g) => g.items.forEach((i) => { if (['buzon', 'pendientes', 'portal'].includes(i.k)) { i.prox = true; i.go = () => window.DOMINO_PROXIMO && window.DOMINO_PROXIMO(i.t); } }));
-  const gest = GRUPOS.find((g) => g.titulo === 'Gestión del estudio'); if (gest && window.DOMINO_T) gest.titulo = window.DOMINO_T('gestion', gest.titulo);
+  const gest = GRUPOS.find((g) => g.titulo === 'Gestión del centro'); if (gest && window.DOMINO_T) gest.titulo = window.DOMINO_T('gestion', gest.titulo);
   const nav = document.getElementById('nav-expedientes'); if (nav && window.DOMINO_T) nav.textContent = window.DOMINO_T('clientes', nav.textContent);
   const lt = document.getElementById('lista-tareas-cliente'), pr = lt && lt.parentElement.querySelector('h2'); if (pr && window.DOMINO_T) pr.textContent = window.DOMINO_T('procesos', pr.textContent);
 }
@@ -139,7 +139,7 @@ function renderResumen(r) {
     { n: r.hoy, t: 'Vencen hoy', cls: 'text-ambar', go: "navegarA('calendario')" },
     { n: r.proceso, t: 'En proceso', cls: 'text-ambar', go: `navegarA('${rol === 'asistente' ? 'mis-tareas' : 'kanban'}')` }
   ];
-  items.push({ n: r.listos, t: rol === 'asistente' ? T('kpi_finalizadas', 'Finalizadas') : T('kpi_listos', 'Balances listos'), cls: 'text-verde', go: `navegarA('${rol === 'asistente' ? 'mis-tareas' : 'kanban'}')` });
+  items.push({ n: r.listos, t: rol === 'asistente' ? T('kpi_finalizadas', 'Finalizadas') : T('kpi_listos', 'Seguimientos resueltos'), cls: 'text-verde', go: `navegarA('${rol === 'asistente' ? 'mis-tareas' : 'kanban'}')` });
   if (rol !== 'asistente' && (window.DOMINO_FUNC || {}).documentos !== false) items.push({ n: (D().kpis || {}).docsPendientes ?? '–', t: 'Documentos por procesar', cls: 'text-ambar', go: 'abrirModalDocsPendientes()' });
   $('hub-resumen').innerHTML = items.map((i) => `<button type="button" class="res-card" onclick="${i.go}"><span class="numero ${i.cls}">${esc(i.n)}</span><span class="res-t">${esc(i.t)}</span></button>`).join('');
 }
@@ -217,14 +217,14 @@ function pintarEmpresas() {
     <button type="button" class="exp-card" data-act="${modo}" data-id="${esc(e.id)}" data-nombre="${esc(e.nombre)}">
       <b>${esc(e.nombre)}</b><small>${e.cuit ? T('id_label', 'CUIT') + ' ' + esc(e.cuit) : ''}</small>${e.masc ? `<small>Mascotas: ${esc(e.masc)}</small>` : ''}
       <span class="exp-meta"><span>${e.abiertas} ${e.abiertas === 1 ? T('proceso', 'proceso abierto') : T('procesos_n', 'procesos abiertos')}</span>${e.docs ? `<span class="exp-doc">${e.docs} ${e.docs === 1 ? 'documento por procesar' : 'documentos por procesar'}</span>` : ''}</span>
-    </button>`).join('') : '<p class="vacio">No hay empresas que coincidan.</p>';
+    </button>`).join('') : '<p class="vacio">No hay socios que coincidan.</p>';
 }
 async function renderExpedientes() {
   const modo = D().modoExp === 'buzon' ? 'buzon' : 'expediente';
   $('titulo-expedientes').innerText = modo === 'buzon' ? (window.DOMINO_T ? window.DOMINO_T('buzon', 'Buzón documental') : 'Buzón documental') : (window.DOMINO_T ? window.DOMINO_T('expedientes', 'Expedientes') : 'Expedientes');
-  $('expedientes-ayuda').innerText = modo === 'buzon' ? T('buscar_ayuda_buzon', 'Elegí la empresa para cargar documentos recibidos o enviarle documentación.') : (window.DOMINO_T ? window.DOMINO_T('ayuda_expediente', 'Elegí la empresa para ver sus procesos y documentos.') : 'Elegí la empresa para ver sus procesos y documentos.');
+  $('expedientes-ayuda').innerText = modo === 'buzon' ? T('buscar_ayuda_buzon', 'Elegí el socio para cargar documentos recibidos o enviarle documentación.') : (window.DOMINO_T ? window.DOMINO_T('ayuda_expediente', 'Elegí el socio para ver su ficha, sus turnos y sus seguimientos.') : 'Elegí el socio para ver su ficha, sus turnos y sus seguimientos.');
   $('lista-expedientes').innerHTML = '<p class="vacio">Cargando…</p>';
-  try { await cargarEmpresas(); pintarEmpresas(); } catch (e) { console.error(e); $('lista-expedientes').innerHTML = '<p class="vacio">No se pudieron cargar las empresas.</p>'; }
+  try { await cargarEmpresas(); pintarEmpresas(); } catch (e) { console.error(e); $('lista-expedientes').innerHTML = '<p class="vacio">No se pudieron cargar los socios.</p>'; }
   D().modoExp = 'expediente';
 }
 $('buscar-expediente').addEventListener('input', pintarEmpresas);
@@ -472,7 +472,7 @@ function buscarEnInicio() {
         <button type="button" class="btn-primary" data-act="expediente" data-id="${esc(e.id)}" data-nombre="${esc(e.nombre)}">Expediente</button>
         <button type="button" class="btn-secundario" data-act="buzon" data-id="${esc(e.id)}" data-nombre="${esc(e.nombre)}">Buzón</button>
       </div>
-    </div>`).join('') : '<p class="vacio">No hay empresas activas que coincidan.</p>';
+    </div>`).join('') : '<p class="vacio">No hay socios activos que coincidan.</p>';
 }
 $('hub-q').addEventListener('input', buscarEnInicio);
 $('hub-q').addEventListener('keydown', (e) => { if (e.key === 'Enter') { const b = document.querySelector('#hub-q-res [data-act="expediente"]'); if (b) b.click(); } });
@@ -516,15 +516,15 @@ window.mostrarFichaDatos = async function (id) {
   };
   const pintar = (m) => {
     bloque.hidden = false;
-    bloque.innerHTML = `<h3>Datos del cliente</h3>
+    bloque.innerHTML = `<h3>Datos del socio</h3>
     <form class="ficha-contacto" id="ficha-contacto"><label>Teléfono<input id="fc-t" type="tel" inputmode="tel" maxlength="25" value="${esc(c.telefono || '')}" placeholder="Ej. 261 555 1234"></label><label>Correo<input id="fc-e" type="email" maxlength="80" value="${esc(c.email_contacto || '')}" placeholder="Opcional"></label><button class="btn-secundario" type="submit">Guardar datos</button>${tel.length >= 6 ? `<a class="btn-secundario" href="tel:${esc(tel)}" style="text-decoration:none;display:inline-flex;align-items:center">Llamar</a>` : ''}</form>
-    <div class="ficha-fila"><span>Responsable</span><b>${esc(nombreFicha)}</b></div>
+    <div class="ficha-fila"><span>Socio</span><b>${esc(nombreFicha)}</b></div>
     ${pers.length ? `<div class="ficha-fila"><span>Familiares y otros</span><div class="ficha-chips">${pers.map((x, i) => `<span class="ficha-chip">${esc(x.nombre)}${x.relacion ? ' · ' + esc(x.relacion) : ''}<button data-p="${i}" aria-label="Quitar ${esc(x.nombre)}">×</button></span>`).join('')}</div></div>` : ''}
     <form class="ficha-alta" id="ficha-fam"><input id="ff-n" placeholder="Agregar familiar u otra persona" maxlength="60" required><select id="ff-r">${['Esposo/a','Pareja','Hijo/a','Padre / madre','Hermano/a','Primo/a','Otro familiar','Vecino/a','Amigo/a','Otra relación'].map(r => `<option>${r}</option>`).join('')}</select><button class="btn-secundario" type="submit">+ Agregar</button></form>
     ${masc ? `<div class="ficha-fila"><span>Mascotas</span><div class="ficha-chips">${m.length ? m.map((x, i) => `<span class="ficha-chip"${abierta === i ? ' data-sel="1"' : ''}><button class="ficha-nom" data-l="${i}" title="Abrir libreta sanitaria">${esc(x.nombre)}${x.tipo ? ' · ' + esc(x.tipo) : ''}${estadoLib(x).vencidas.length ? ' ⚠' : ''}</button><button data-q="${i}" aria-label="Quitar ${esc(x.nombre)}">×</button></span>`).join('') : '<i>ninguna cargada</i>'}</div></div>
     <form class="ficha-alta" id="ficha-masc"><input id="fm-n" placeholder="Nombre de la mascota" maxlength="60" required><select id="fm-t"><option>Perro</option><option>Gato</option><option>Otro</option></select><button class="btn-secundario" type="submit">+ Agregar</button></form>
     ${abierta !== null && m[abierta] ? libretaHTML(m[abierta]) : ''}
-    <a class="btn-secundario" style="text-decoration:none;display:inline-flex;align-items:center;margin-top:8px" href="turnos/panel.html?cliente=${encodeURIComponent(id)}">Ver turnos de este cliente</a>` : ''}`;
+    <a class="btn-secundario" style="text-decoration:none;display:inline-flex;align-items:center;margin-top:8px" href="turnos/panel.html?cliente=${encodeURIComponent(id)}">Ver turnos de este socio</a>` : ''}${turnos && !masc ? `<a class="btn-secundario" style="text-decoration:none;display:inline-flex;align-items:center;margin-top:8px" href="turnos/panel.html?cliente=${encodeURIComponent(id)}">Ver turnos de este socio</a>` : ''}`;
     bloque.querySelector('#ficha-contacto').onsubmit = async (ev) => { ev.preventDefault(); const t = bloque.querySelector('#fc-t').value.trim(), e = bloque.querySelector('#fc-e').value.trim().toLowerCase(); try { await updateDoc(doc(D().db, 'clients', id), { telefono: t, email_contacto: e }); c.telefono = t; c.email_contacto = e; pintar(m); D().aviso && D().aviso('Datos guardados.', 'ok'); } catch (x) { D().aviso && D().aviso('No se pudieron guardar los datos.', 'error'); } };
     bloque.querySelectorAll('[data-p]').forEach(b => b.onclick = async () => { const x = pers[+b.dataset.p]; try { await updateDoc(doc(D().db, 'clients', id), { personas: arrayRemove(x) }); pers = pers.filter((_, i) => i !== +b.dataset.p); c.personas = pers; pintar(m); } catch (e) { D().aviso && D().aviso('No se pudo quitar.', 'error'); } });
     bloque.querySelector('#ficha-fam').onsubmit = async (ev) => { ev.preventDefault(); const n = bloque.querySelector('#ff-n').value.trim(); if (!n) return; const nueva = { nombre: n, relacion: bloque.querySelector('#ff-r').value, telefono: '' }; try { await updateDoc(doc(D().db, 'clients', id), { personas: arrayUnion(nueva) }); pers = [...pers, nueva]; c.personas = pers; pintar(m); } catch (e) { D().aviso && D().aviso('No se pudo guardar.', 'error'); } };

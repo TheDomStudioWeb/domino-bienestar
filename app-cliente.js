@@ -41,9 +41,9 @@ function aplicarPermisos() {
     if (aviso) {
         const faltan = [];
         if (!p.subir) faltan.push('enviar documentos');
-        if (!p.descargar) faltan.push('ver lo que entrega el estudio');
+        if (!p.descargar) faltan.push('ver lo que entrega el centro');
         aviso.style.display = faltan.length ? 'block' : 'none';
-        aviso.textContent = faltan.length ? 'Su usuario no tiene habilitado: ' + faltan.join(' ni ') + '. Si lo necesita, pídaselo al estudio.' : '';
+        aviso.textContent = faltan.length ? 'Su usuario no tiene habilitado: ' + faltan.join(' ni ') + '. Si lo necesita, pídaselo al centro.' : '';
     }
 }
 
@@ -115,7 +115,7 @@ onAuthStateChanged(auth, async (usuario) => {
     const usuarioId = usuario.email;
     await cargarEmpresasCliente(usuarioId);
     if (!ID_CLIENTE) {
-        document.getElementById('lista-entregas').innerHTML = "<p style='color: var(--text-muted);'>Su usuario todavía no tiene una empresa asignada. Comuníquese con el estudio.</p>";
+        document.getElementById('lista-entregas').innerHTML = "<p style='color: var(--text-muted);'>Su usuario todavía no tiene una ficha de socio asignada. Comuníquese con el centro.</p>";
         document.getElementById('form-cliente-subir').style.display = 'none';
         return;
     }
@@ -160,7 +160,7 @@ formCliente.addEventListener('submit', async (e) => {
         formCliente.reset();
         formCliente.style.display = 'none';
         mensajeExito.style.display = 'block';
-        btnSubmit.innerText = "Subir y Notificar al Estudio";
+        btnSubmit.innerText = "Subir y avisar al centro";
         btnSubmit.disabled = false;
 
     setTimeout(() => {

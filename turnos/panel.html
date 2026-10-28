@@ -76,7 +76,7 @@ footer{text-align:center;color:var(--mut);font-size:12.5px;padding:22px 0 0;marg
 import { llamar, msg as msgBase } from './api.js';
 const $ = s => document.querySelector(s), M = $('#m');
 const E = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-const MSG = { sesion_invalida: 'Su sesión venció. Ingrese de nuevo.', usuario_invalido: 'Usuario o clave incorrectos.', clave_incorrecta: 'Usuario o clave incorrectos.', demasiados_intentos: 'Demasiados intentos. Espere 10 minutos.', sin_permiso: 'No tiene permiso para esa acción.', estado_invalido: 'Ese cambio de estado no está permitido.', aun_no_es_la_hora: 'Solo se puede marcar «No vino» pasada la hora del turno.', recurso_invalido: 'Ese profesional no atiende ese servicio.', horario_invalido: 'Horario inválido.', falta_cliente: 'Falta indicar el cliente.' };
+const MSG = { sesion_invalida: 'Su sesión venció. Ingrese de nuevo.', usuario_invalido: 'Usuario o clave incorrectos.', clave_incorrecta: 'Usuario o clave incorrectos.', demasiados_intentos: 'Demasiados intentos. Espere 10 minutos.', sin_permiso: 'No tiene permiso para esa acción.', estado_invalido: 'Ese cambio de estado no está permitido.', aun_no_es_la_hora: 'Solo se puede marcar «No vino» pasada la hora del turno.', recurso_invalido: 'Ese profesional no atiende ese servicio.', horario_invalido: 'Horario inválido.', falta_cliente: 'Falta indicar el socio.' };
 const msg = e => MSG[e] || msgBase(e);
 const DS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'], MS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 const z = n => String(n).padStart(2, '0');
@@ -127,7 +127,7 @@ async function pintar() {
   if (!S.ag) M.innerHTML = '<div class="cargando">Cargando agenda…</div>';
   if (!(await cargarAgenda())) return; badge();
   if (S.pre && !S.pre.listo) { S.pre.listo = true; try { const c = await conectar(); if (c.ok) S.pre.d = await fch.datosDe(S.pre.cliente); } catch (e) {} S.tab = 'nuevo'; S.nu = { pre: S.pre }; }
-  if (S.alIngresar) { const id = S.alIngresar; S.alIngresar = null; let nom = ''; try { nom = (await (async () => { const c = await conectar(); return c.ok ? fch.nombreDe(id) : ''; })()) || ''; } catch (e) {} return historial({ cliente_id: id, nombre: nom || 'Historial del cliente' }); }
+  if (S.alIngresar) { const id = S.alIngresar; S.alIngresar = null; let nom = ''; try { nom = (await (async () => { const c = await conectar(); return c.ok ? fch.nombreDe(id) : ''; })()) || ''; } catch (e) {} return historial({ cliente_id: id, nombre: nom || 'Historial del socio' }); }
   if (S.det) return pDetalle();
   ({ agenda: pAgenda, nuevo: pNuevo, aviso: pAviso, mas: pMas }[S.tab] || pAgenda)();
 }
@@ -167,7 +167,7 @@ function pDetalle(aviso) {
   <div class="acc">${sg.map(([e, tx]) => `<button class="btn" data-e="${E(e)}">${E(tx)}</button>`).join('')}
   <a class="btn sec" style="text-align:center;text-decoration:none;display:grid;place-items:center" href="${E(waLink(t.contacto_tel, hola))}" target="_blank" rel="noopener">Escribir por WhatsApp</a>
   <a class="btn sec" style="text-align:center;text-decoration:none;display:grid;place-items:center" href="tel:${E(limpiaTel(t.contacto_tel))}">Llamar</a>
-  <button class="btn sec" id="hist">Historial del cliente</button>${t.cliente_id ? (mismaP(t.contacto_nombre, t.cliente_nombre) ? '' : '<button class="btn" id="rel">Indicar relación con ' + E(t.cliente_nombre || 'el responsable') + '</button>') : '<button class="btn" id="vinc">Vincular con la ficha</button>'}
+  <button class="btn sec" id="hist">Historial del socio</button>${t.cliente_id ? (mismaP(t.contacto_nombre, t.cliente_nombre) ? '' : '<button class="btn" id="rel">Indicar relación con ' + E(t.cliente_nombre || 'el responsable') + '</button>') : '<button class="btn" id="vinc">Vincular con la ficha</button>'}
   ${act ? '<button class="btn sec" id="rep">Reprogramar</button><button class="btn peligro" id="can">Cancelar turno</button>' : ''}</div><div id="zona"></div>`;
   $('#v').onclick = () => { S.det = null; pintar(); };
   M.querySelectorAll('[data-e]').forEach(b => b.onclick = async () => { if (S.busy) return; S.busy = true; M.querySelectorAll('button').forEach(x => x.disabled = true); b.textContent = 'Guardando…'; const r = await api('cambiar_estado', { id: t.id, estado: b.dataset.e }); S.busy = false; if (!r.ok) return pDetalle(err(r.error)); t.estado = b.dataset.e; badge(); pDetalle('<div class="ok"><b>Listo.</b> El turno quedó «' + E(t.estado) + '».</div>'); });
@@ -177,12 +177,12 @@ function pDetalle(aviso) {
   const vi = $('#vinc'); if (vi) vi.onclick = () => vincular(t);
   const rl = $('#rel'); if (rl) rl.onclick = async () => {
     rl.disabled = true; const z = $('#zona'); z.innerHTML = '<div class="cargando">Conectando…</div>'; const c = await conectar();
-    if (!c.ok) { z.innerHTML = `<div class="err"><b>Falta ingresar al Hub.</b> Entre primero a DOMino Profesional con su usuario del estudio y vuelva.</div>`; rl.disabled = false; return; }
+    if (!c.ok) { z.innerHTML = `<div class="err"><b>Falta ingresar al Hub.</b> Entre primero al Hub de DOMino Bienestar con su usuario y vuelva.</div>`; rl.disabled = false; return; }
     const rel = await pedirRelacion(t.contacto_nombre, t.cliente_nombre, z); if (!rel) { z.innerHTML = ''; rl.disabled = false; return; }
     try { await fch.sumarPersona(t.cliente_id, t.contacto_nombre, rel, t.contacto_tel); pDetalle('<div class="ok"><b>Listo.</b> ' + E(t.contacto_nombre) + ' figura como ' + E(rel.toLowerCase()) + ' de ' + E(t.cliente_nombre) + '.</div>'); } catch (e) { z.innerHTML = err('sin_permiso'); rl.disabled = false; }
   };
 }
-// ── Ficha del cliente ──
+// ── Ficha del socio ──
 async function historial(q) {
   M.innerHTML = `<button class="volver" id="v">‹ Volver</button><h2>${E(q.nombre || 'Historial')}</h2><div class="cargando">Buscando…</div>`; $('#v').onclick = () => { S.hist = null; pintar(); };
   S.hist = q; const r = await api('historial', { cliente_id: q.cliente_id, tel: q.tel }); if (!$('#v')) return;
@@ -196,11 +196,11 @@ async function historial(q) {
 async function vincular(t) {
   const z0 = $('#zona'); z0.innerHTML = '<div class="cargando">Buscando fichas…</div>'; z0.scrollIntoView({ block: 'start' });
   const c = await conectar();
-  if (!c.ok) { z0.innerHTML = `<div class="err"><b>Falta ingresar al Hub.</b> Para vincular fichas, entre primero a DOMino Profesional con su usuario del estudio y vuelva a esta pantalla.</div><a class="btn sec" style="text-align:center;text-decoration:none;display:grid;place-items:center" href="../index.html">Ir al Hub</a>`; return; }
+  if (!c.ok) { z0.innerHTML = `<div class="err"><b>Falta ingresar al Hub.</b> Para vincular fichas, entre primero al Hub de DOMino Bienestar con su usuario y vuelva a esta pantalla.</div><a class="btn sec" style="text-align:center;text-decoration:none;display:grid;place-items:center" href="../index.html">Ir al Hub</a>`; return; }
   let todas = [], lista = []; try { todas = await fch.todas(); lista = fch.parecidas(todas, t.contacto_nombre, t.contacto_tel); } catch (e) { z0.innerHTML = err('sin_permiso'); return; }
   const fila = f => `<div class="rec"><div class="t"><b>${E(f.nombre)}</b>${f.exacto ? '<span class="pill es">Mismo teléfono</span>' : ''}</div><span class="msg">${E(f.telefono || 'Sin teléfono')}${f.mascotas ? ' · ' + E(f.mascotas) : ''}</span><button class="btn" data-f="${E(f.id)}" data-n="${E(f.nombre)}">Es esta persona</button></div>`;
   z0.innerHTML = `<h2>Vincular con la ficha</h2>${lista.length ? `<p style="color:var(--mut);margin:0 0 8px">Fichas que se parecen:</p><div class="lista" id="sug">${lista.map(fila).join('')}</div>` : '<div class="vacio">No hay fichas parecidas.</div>'}
-  <label for="bq">Buscar otra ficha (${todas.length} en el estudio)</label><input id="bq" placeholder="Nombre, teléfono o mascota" autocomplete="off"><div class="lista" id="bl" style="margin-top:8px"></div>
+  <label for="bq">Buscar otra ficha (${todas.length} socios)</label><input id="bq" placeholder="Nombre o teléfono" autocomplete="off"><div class="lista" id="bl" style="margin-top:8px"></div>
   <button class="btn sec" id="nueva">Crear una ficha nueva con estos datos</button><div id="vz"></div>`;
   const enlazar = () => z0.querySelectorAll('[data-f]').forEach(b => b.onclick = () => elegir(b.dataset.f, b.dataset.n));
   $('#bq').oninput = () => { const q = $('#bq').value; $('#bl').innerHTML = q.trim() ? (fch.buscar(todas, q).map(fila).join('') || '<div class="vacio">Sin resultados.</div>') : ''; enlazar(); };
@@ -309,7 +309,7 @@ async function pAviso() {
   const r = await api('recordatorios_manana'); if (!r.ok) { M.innerHTML = '<h2>Turnos de mañana</h2>' + err(r.error); return; }
   S.av = r;
   M.innerHTML = `<h2>Turnos de mañana</h2><p style="color:var(--mut);margin:0 0 10px">${E(largaF(r.fecha))}. Cada botón abre WhatsApp con el mensaje ya escrito; usted solo lo envía.</p><div class="lista">${r.turnos.length ? r.turnos.map(t => `<div class="rec"><div class="t"><b>${E(t.hora)} · ${E(t.nombre)}${t.sujeto ? ' · ' + E(t.sujeto) : ''}</b>${t.avisado ? '<span class="pill es">Avisado</span>' : ''}</div><span class="msg">${E(t.mensaje)}</span><a class="btn" style="text-align:center;text-decoration:none;display:grid;place-items:center" data-id="${E(t.id)}" href="${E(waLink(t.tel, t.mensaje))}" target="_blank" rel="noopener">${t.avisado ? 'Enviar de nuevo' : 'Enviar por WhatsApp'}</a></div>`).join('') : '<div class="vacio">No hay turnos para mañana.</div>'}</div>`;
-  controles();
+  if (S.ag.config.rubro === 'veterinaria') controles();
   M.querySelectorAll('a[data-id]').forEach(a => a.addEventListener('click', () => { api('marcar_avisado', { id: a.dataset.id }); const p = a.closest('.rec').querySelector('.t'); if (!p.querySelector('.pill')) p.insertAdjacentHTML('beforeend', '<span class="pill es">Avisado</span>'); }));
 }
 

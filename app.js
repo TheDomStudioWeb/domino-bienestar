@@ -118,8 +118,8 @@ async function cargarClientes(filtro = "activo") {
     const listaClientes = document.getElementById('client-list');
     listaClientes.innerHTML = "";
     const tituloCartera = document.querySelector('.client-board h2');
-const textoVacio = filtro === 'inactivo' ? 'No hay clientes inactivos registrados.' : 'No hay clientes activos registrados.';
-tituloCartera.innerText = filtro === 'inactivo' ? (window.DOMINO_T ? window.DOMINO_T('cartera_inactivos', 'Cartera de Clientes Inactivos') : 'Cartera de Clientes Inactivos') : (window.DOMINO_T ? window.DOMINO_T('cartera_activos', 'Cartera de Clientes Activos') : 'Cartera de Clientes Activos');
+const textoVacio = filtro === 'inactivo' ? 'No hay socios inactivos registrados.' : 'No hay socios activos registrados.';
+tituloCartera.innerText = filtro === 'inactivo' ? (window.DOMINO_T ? window.DOMINO_T('cartera_inactivos', 'Socios inactivos') : 'Socios inactivos') : (window.DOMINO_T ? window.DOMINO_T('cartera_activos', 'Socios activos') : 'Socios activos');
 
     try {
         let q;
@@ -155,8 +155,8 @@ const querySnapshot = await getDocs(q);
     ${cliente.estado === 'activo' ? 'Desactivar' : 'Activar'}
 </button>
                     <button class="btn-secundario" data-act="accesos" data-id="${esc(idDoc)}" data-nombre="${esc(cliente.nombre_empresa)}" title="Quiénes de esta empresa entran al portal y qué pueden hacer">Accesos</button>
-                    ${(window.DOMINO_MODULOS || {}).turnos ? `<a class="btn-secundario" style="text-decoration:none;display:inline-flex;align-items:center" href="turnos/panel.html?cliente=${encodeURIComponent(idDoc)}" title="Turnos de este cliente">Turnos</a>` : ''}
-                    ${cliente.usuario_id ? `<button class="btn-secundario" data-act="acceso" data-email="${esc(cliente.usuario_id)}" title="Envía al cliente un correo para crear o restablecer su clave del portal">Enviar acceso</button>` : ''}
+                    ${(window.DOMINO_MODULOS || {}).turnos ? `<a class="btn-secundario" style="text-decoration:none;display:inline-flex;align-items:center" href="turnos/panel.html?cliente=${encodeURIComponent(idDoc)}" title="Turnos de este socio">Turnos</a>` : ''}
+                    ${cliente.usuario_id ? `<button class="btn-secundario" data-act="acceso" data-email="${esc(cliente.usuario_id)}" title="Envía al socio un correo para crear o restablecer su clave del portal">Enviar acceso</button>` : ''}
                 </div>
             `;
             listaClientes.innerHTML += clienteHTML;
@@ -176,7 +176,7 @@ const querySnapshot = await getDocs(q);
 });
 
     } catch (error) {
-        console.error("Error al cargar clientes:", error);
+        console.error("Error al cargar socios:", error);
     }
 }
 
@@ -202,13 +202,13 @@ formAlta.addEventListener('submit', async (e) => {
         cargarClientes(); // Recargamos la lista en pantalla
 
     } catch (error) {
-        alert("Error al guardar el cliente: " + error.message);
+        alert("Error al guardar el socio: " + error.message);
     }
 });
 
 // 3. Baja Lógica de Cliente (Cambio de estado)
 async function desactivarCliente(id) {
-    if (confirm("¿Estás seguro de que deseas desactivar este cliente?")) {
+    if (confirm("¿Seguro que querés dar de baja a este socio?")) {
         try {
             const clienteRef = doc(db, "clients", id);
             await updateDoc(clienteRef, {
@@ -224,7 +224,7 @@ async function desactivarCliente(id) {
 }
 
 async function reactivarCliente(id) {
-    if (confirm("¿Confirma que el cliente vuelve al estudio?")) {
+    if (confirm("¿Confirma que el socio vuelve al centro?")) {
         try {
             const clienteRef = doc(db, "clients", id);
             await updateDoc(clienteRef, {
@@ -318,7 +318,7 @@ async function cargarTareasDelCliente(id) {
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
-            listaTareas.innerHTML = "<p style='color: var(--text-muted);'>No hay procesos activos para este cliente.</p>";
+            listaTareas.innerHTML = "<p style='color: var(--text-muted);'>No hay seguimientos activos para este socio.</p>";
             return;
         }
 
@@ -541,7 +541,7 @@ function cambiarEmpresaActiva(idEmpresa) {
 // Escuchamos el cambio en toda la aplicación
 window.addEventListener('empresaCambiada', () => {
     const id = localStorage.getItem('empresa_activa');
-    console.log("Nueva empresa seleccionada:", id);
+    console.log("Nuevo socio seleccionado:", id);
     // Aquí iría el filtro lógico que usaremos en el futuro
 });
 
@@ -686,7 +686,7 @@ async function iniciarApp() {
 
         const perfil = userSnap.docs[0].data();
         if (perfil.activo === false) {
-            alert("Tu acceso está dado de baja. Contactá al responsable del estudio.");
+            alert("Tu acceso está dado de baja. Contactá a la Dirección del centro.");
             await signOut(auth);
             window.location.replace('login.html');
             return;
@@ -747,7 +747,7 @@ for (const docSnap of querySnapshot.docs) {
 
     const clienteRef = doc(db, "clients", documento.cliente_id);
     const clienteSnap = await getDoc(clienteRef);
-    const nombreEmpresa = clienteSnap.exists() ? clienteSnap.data().nombre_empresa : "Empresa desconocida";
+    const nombreEmpresa = clienteSnap.exists() ? clienteSnap.data().nombre_empresa : "Socio sin ficha";
 
     listaDocs.innerHTML += `
         <div class="doc-item">
@@ -810,7 +810,7 @@ window.cargarPrioridades = async function() {
         querySnapshot.forEach((taskDoc) => {
             const tarea = taskDoc.data();
             if (tarea.estado === "Proceso Completo/Finalizado") return;
-            const nombreEmpresa = cacheClientes[tarea.cliente_id] || (window.DOMINO_T ? window.DOMINO_T("desconocido", "Empresa desconocida") : "Empresa desconocida");
+            const nombreEmpresa = cacheClientes[tarea.cliente_id] || (window.DOMINO_T ? window.DOMINO_T("desconocido", "Socio sin ficha") : "Socio sin ficha");
             
             listaPrioridades.innerHTML += `
                 <div class="task-item ${colorEstado[tarea.estado] || 'border-ambar'}">
@@ -818,12 +818,12 @@ window.cargarPrioridades = async function() {
                         <h4>${esc(tarea.titulo)}</h4>
                         <p style="color: var(--text-muted); font-size: 0.85rem;">
                             <strong>${esc(nombreEmpresa)}</strong> | 
-                            Área: ${esc(tarea.responsable)} | 
+                            Se encarga: ${esc(tarea.responsable)} | 
                             Vence: ${esc(tarea.vencimiento)} | Estado: ${esc(window.TXT_ESTADO ? window.TXT_ESTADO(tarea.estado) : tarea.estado)}
                         </p>
                     </div>
                     <button class="btn-action" data-act="expediente" data-id="${esc(tarea.cliente_id)}" data-nombre="${esc(nombreEmpresa)}">
-                        Ver Expediente
+                        Ver ficha
                     </button>
                 </div>
             `;
@@ -883,8 +883,8 @@ fecha_timestamp: serverTimestamp()
 });  
 
 formEnviarCliente.reset();  
-alert("Documento enviado al cliente correctamente.");
-btnSend.innerText = "Enviar al Cliente";
+alert("Documento enviado al socio correctamente.");
+btnSend.innerText = "Enviar al socio";
 btnSend.disabled = false;
 
 } catch (error) {  
@@ -934,7 +934,7 @@ async function cargarKanban() {
             const columna = columnas[tarea.estado];
             if (!columna || !pasaFiltro(tarea)) return;
             
-            const nombreEmpresa = cacheClientes[tarea.cliente_id] || (window.DOMINO_T ? window.DOMINO_T("desconocido", "Empresa desconocida") : "Empresa desconocida");
+            const nombreEmpresa = cacheClientes[tarea.cliente_id] || (window.DOMINO_T ? window.DOMINO_T("desconocido", "Socio sin ficha") : "Socio sin ficha");
             
             columna.innerHTML += `
                 <div class="kanban-card" data-act="expediente" data-id="${esc(tarea.cliente_id)}" data-nombre="${esc(nombreEmpresa)}" role="button" tabindex="0">
@@ -1047,7 +1047,7 @@ async function cargarMisTareas(nombreAsistente) {
             const columna = columnas[tarea.estado];
             if (!columna || !pasaFiltro(tarea)) return;
             
-            const nombreEmpresa = cacheClientes[tarea.cliente_id] || (window.DOMINO_T ? window.DOMINO_T("desconocido", "Empresa desconocida") : "Empresa desconocida");
+            const nombreEmpresa = cacheClientes[tarea.cliente_id] || (window.DOMINO_T ? window.DOMINO_T("desconocido", "Socio sin ficha") : "Socio sin ficha");
             
             columna.innerHTML += `
     <div class="kanban-card" data-act="docs-tarea" data-id="${esc(taskDoc.id)}" data-titulo="${esc(tarea.titulo)}" data-cliente="${esc(tarea.cliente_id)}" role="button" tabindex="0">
@@ -1095,7 +1095,7 @@ async function renderAccesos() {
         snap.forEach((d) => filas.push({ id: d.id, ...d.data() }));
         filas.sort((a, b) => String(a.nombre || a.email).localeCompare(String(b.nombre || b.email)));
         let html = titular
-            ? `<div class="acc-fila acc-titular"><div><strong>${esc(titular)}</strong><span class="acc-sub">Titular de la empresa · todos los permisos</span></div></div>`
+            ? `<div class="acc-fila acc-titular"><div><strong>${esc(titular)}</strong><span class="acc-sub">Titular de la ficha · todos los permisos</span></div></div>`
             : `<p style="color: var(--text-muted);">Esta ficha no tiene titular. Cargá un correo en el campo «usuario» de la ficha.</p>`;
         html += filas.map((f) => `
             <div class="acc-fila ${f.activo === false ? 'acc-baja' : ''}" data-aid="${esc(f.id)}" data-email="${esc(f.email)}">
@@ -1142,7 +1142,7 @@ document.getElementById('lista-accesos').addEventListener('click', async (e) => 
     try {
         if (btn.dataset.ac === 'reenviar') { await window.enviarAcceso(fila.dataset.email, btn); return; }
         if (btn.dataset.ac === 'baja') {
-            if (!confirm('¿Dar de baja a esta persona? Deja de entrar al portal de esta empresa.')) return;
+            if (!confirm('¿Dar de baja a esta persona? Deja de entrar al portal de este socio.')) return;
             await updateDoc(ref, { activo: false });
         } else if (btn.dataset.ac === 'reactivar') {
             await updateDoc(ref, { activo: true });
@@ -1162,11 +1162,11 @@ document.getElementById('form-acceso').addEventListener('submit', async (e) => {
     try {
         const fic = await getDoc(doc(db, 'clients', accesosEmpresa.id));
         if (fic.exists() && String(fic.data().usuario_id || '').toLowerCase() === email) {
-            window.DOMINO.aviso('Ese correo ya es el titular de la empresa.', 'error'); btn.disabled = false; return;
+            window.DOMINO.aviso('Ese correo ya es el titular de la ficha.', 'error'); btn.disabled = false; return;
         }
         const ref = doc(db, 'accesos_portal', idAcceso(email, accesosEmpresa.id));
         if ((await getDoc(ref)).exists()) {
-            window.DOMINO.aviso('Esa persona ya figura en la lista de esta empresa.', 'error'); btn.disabled = false; return;
+            window.DOMINO.aviso('Esa persona ya figura en la lista de este socio.', 'error'); btn.disabled = false; return;
         }
         await setDoc(ref, {
             email, nombre, cliente_id: accesosEmpresa.id, cliente_nombre: accesosEmpresa.nombre,

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal del cliente | DOMino Profesional</title>
+    <title>Portal del socio | DOMino Bienestar</title>
     <link rel="stylesheet" href="style.css">
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="hub.css">
@@ -13,7 +13,7 @@
     <div style="width: 100%; max-width: 500px;">
         <div style="text-align: center; margin-bottom: 30px;">
             <img src="imagenes/logo.png" alt="Logo" data-marca-logo style="width: 40px; margin-bottom: 15px;">
-            <h2 style="letter-spacing: 2px;">ESTUDIO PROFESIONAL</h2>
+            <h2 style="letter-spacing: 2px;">CENTRO DE BIENESTAR</h2>
             <p style="color: var(--text-muted); font-size: 0.9rem;">Portal de Envío Documental</p>
         </div>
 
@@ -25,7 +25,7 @@
     </button>
 </div>
         <div class="upload-card">
-            <h3>Enviar Material al Estudio</h3>
+            <h3>Enviar documentos al centro</h3>
             <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">Seleccione el área a la que corresponde este documento.</p>
             
             <form id="form-cliente-subir">
@@ -42,7 +42,7 @@
                     <label>Archivo / Documento</label>
                     <input type="file" id="cliente-archivo" required multiple style="padding: 10px; background: var(--bg-base); color: var(--text-main); border: 1px dashed var(--text-muted); cursor: pointer;">
                 </div>
-                <button type="submit" class="btn-primary" style="margin-top: 20px; width: 100%;">Subir y Notificar al Estudio</button>
+                <button type="submit" class="btn-primary" style="margin-top: 20px; width: 100%;">Subir y avisar al centro</button>
             </form>
         </div>
 
@@ -54,7 +54,7 @@
 
     <p id="aviso-permisos" style="display:none; margin-top:20px; padding:12px 14px; border-left:4px solid var(--text-muted); background: var(--bg-panel); border-radius:6px; font-size:0.9rem; color: var(--text-muted);"></p>
     <div id="bloque-entregas" style="margin-top: 30px; border: 1px solid var(--verde-ok); border-radius: 12px; padding: 25px; box-sizing: border-box; width: 100%;">
-    <h3 style="margin-bottom: 15px; color: var(--verde-ok);">📥 Documentación del Estudio</h3>
+    <h3 style="margin-bottom: 15px; color: var(--verde-ok);">📥 Documentación del centro</h3>
     <div style="display: flex; gap: 8px; margin-bottom: 15px;">
     <button id="pill-reciente" class="btn-primary" onclick="filtrarEntregasFecha('reciente')" style="border-radius: 20px; padding: 4px 14px; font-size: 0.85rem;">
         Más reciente
@@ -72,7 +72,7 @@
     </button>
 </div>
     <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 15px;">
-        Archivos enviados por su estudio para descargar.
+        Archivos que le envió el centro para descargar.
     </p>
     <div id="lista-entregas">
         <p style="color: var(--text-muted);">Cargando...</p>
