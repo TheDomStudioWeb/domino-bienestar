@@ -30,7 +30,7 @@ function estilos() {
   .bn-caja h2{font-family:Cinzel,serif;font-size:1.35rem;margin:0 0 6px;color:var(--gold-light,#e8c766)}
   .bn-caja p{margin:0 0 12px;color:var(--text-muted,#a8a396);line-height:1.5}
   .bn-caja label.bn-l{display:block;margin:14px 0 6px;font-weight:600}
-  .bn-caja input[type=text],.bn-caja input[type=tel]{width:100%;padding:12px;border-radius:8px;border:1px solid var(--line,#2a2d33);background:var(--bg-base,#0a0a0a);color:inherit;font-size:1rem}
+  .bn-caja input[type=text],.bn-caja input[type=tel],.bn-caja input[type=password]{width:100%;padding:12px;border-radius:8px;border:1px solid var(--line,#2a2d33);background:var(--bg-base,#0a0a0a);color:inherit;font-size:1rem}
   .bn-acts{display:grid;gap:8px;margin-top:6px}
   .bn-act{display:flex;gap:12px;align-items:flex-start;padding:12px;border:1px solid var(--line,#2a2d33);border-radius:10px;cursor:pointer;background:var(--bg-base,#0a0a0a)}
   .bn-act:has(input:checked){border-color:var(--gold,#d4af37);background:#d4af3714}
@@ -100,9 +100,10 @@ function pintarPanel(abrirPasos) {
   } else {
     const acts = negocio.actividades || [];
     p.innerHTML = `<h2>${esc(negocio.nombre)}</h2><div class="bn-chips">${acts.map((a) => `<span class="bn-chip">${esc(nombreActividad(a))}</span>`).join('')}</div>
-    ${senior ? `<div class="bn-fila"><button type="button" class="bn-btn sec" id="bn-abrir">Cambiar actividades</button></div>` : ''}`;
+    ${senior ? `<div class="bn-fila"><button type="button" class="bn-btn sec" id="bn-abrir">Cambiar actividades</button>${tieneClases(acts) ? '<button type="button" class="bn-btn sec" id="bn-clases-adm">Administrar clases</button>' : ''}</div>` : ''}`;
   }
   const a = $('bn-abrir'); if (a) a.onclick = asistente;
+  const ac = $('bn-clases-adm'); if (ac) ac.onclick = () => adminClases();
 }
 
 async function iniciar() {
@@ -226,7 +227,7 @@ function pintarClases() {
   box.innerHTML = dias.map((f) => `<div class="bn-dia"><h3>${f === hoyStr() ? 'Hoy' : esc(fechaLarga(f))}</h3><div class="bn-cls">${visibles.filter((c) => c.fecha === f).map((c) => {
     const lleno = c.libres <= 0, pocos = !lleno && c.libres <= Math.max(2, Math.ceil(c.cupo * 0.2));
     const estado = c.suspendida ? 'Suspendida' : lleno ? 'Completa' : `${c.libres} de ${c.cupo}`;
-    return `<div class="bn-cl${c.suspendida || lleno ? ' lleno' : pocos ? ' pocos' : ''}"><span class="h">${esc(c.hora)}</span><span><b>${esc(c.clase)}</b><small>${esc(c.sala)}</small></span><span class="bn-cupo">${esc(estado)}${!c.suspendida && !lleno ? '<small>lugares libres</small>' : ''}</span></div>`;
+    return `<div class="bn-cl${c.suspendida || lleno ? ' lleno' : pocos ? ' pocos' : ''}"><span class="h">${esc(c.hora)}</span><span><b>${esc(c.clase)}</b><small>${esc([c.profesor ? 'Prof. ' + c.profesor : '', c.sala].filter(Boolean).join(' · '))}</small></span><span class="bn-cupo">${esc(estado)}${!c.suspendida && !lleno ? '<small>lugares libres</small>' : ''}</span></div>`;
   }).join('')}</div></div>`).join('');
 }
 
@@ -285,3 +286,118 @@ function engancharAlta() {
 window.addEventListener('domino:listo', () => { if (!activo()) return; estilosHub(); engancharFicha(); engancharAlta(); refrescarHubBienestar(); });
 window.addEventListener('domino:vista', (e) => { if (activo() && e.detail === 'hub') refrescarHubBienestar(); });
 if (activo() && D() && D().listo) { estilosHub(); engancharFicha(); engancharAlta(); refrescarHubBienestar(); }
+
+
+// ── Administrar clases: agregar, editar profesor/cupo/horarios o quitar ──
+// Usa la sesión de la Agenda de turnos (misma clave que la planilla, hoja usuarios). Solo Dirección (Senior o Mid Senior en la planilla).
+const DIAS = [[1, 'Lun'], [2, 'Mar'], [3, 'Mié'], [4, 'Jue'], [5, 'Vie'], [6, 'Sáb'], [0, 'Dom']];
+const nomDia = (d) => (DIAS.find((x) => x[0] === d) || [0, '?'])[1];
+const tieneClases = (acts) => (acts || []).some((id) => ((CAT().find((a) => a.id === id) || {}).clases || []).length);
+const ERR_CLASE = { cupo_invalido: 'El cupo tiene que ser de 2 a 500 personas.', duracion_invalida: 'Elija una duración de la lista.', horario_invalido: 'Revise los horarios: elija al menos un día y la hora de inicio.', faltan_horarios: 'Agregue al menos un día y horario.', falta_nombre_clase: 'Escriba el nombre de la clase.', sin_permiso: 'Su usuario de la agenda no tiene permiso para cambiar clases (lo hace la Dirección).', usuario_invalido: 'Ese correo no está habilitado en la agenda.', clave_incorrecta: 'La clave no es correcta.', demasiados_intentos: 'Demasiados intentos. Espere unos minutos.', servicio_invalido: 'Esa clase ya no existe. Actualice la lista.' };
+const errClase = (e) => ERR_CLASE[e] || 'No se pudo completar. Revise su conexión e intente de nuevo.';
+const sesionAgenda = () => { try { return JSON.parse(localStorage.getItem('turnos_sesion') || 'null'); } catch (e) { return null; } };
+const guardarSesionAgenda = (s) => { try { s ? localStorage.setItem('turnos_sesion', JSON.stringify(s)) : localStorage.removeItem('turnos_sesion'); } catch (e) {} };
+async function apiAgenda(accion, datos) {
+  const s = sesionAgenda(); if (!s || !s.tok) return { ok: false, error: 'sesion_invalida' };
+  const r = await llamar(accion, Object.assign({}, datos, { token: s.tok }));
+  if (!r.ok && r.error === 'sesion_invalida') guardarSesionAgenda(null);
+  return r;
+}
+let listaClases = [];
+function cajaClases(html) {
+  estilos(); estilosHub(); cerrar();
+  const f = document.createElement('div'); f.id = 'bn-fondo'; f.className = 'bn-fondo'; f.setAttribute('role', 'dialog'); f.setAttribute('aria-modal', 'true'); f.setAttribute('aria-labelledby', 'bn-t');
+  f.innerHTML = `<div class="bn-caja" id="bn-caja"><button type="button" class="bn-x" id="bn-x" aria-label="Cerrar">✕</button>${html}</div>`;
+  document.body.appendChild(f); document.body.style.overflow = 'hidden';
+  $('bn-x').onclick = cerrar; f.addEventListener('click', (e) => { if (e.target === f) cerrar(); }); f.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrar(); });
+  return f;
+}
+async function adminClases() {
+  if (!window.TURNOS_API) { cajaClases('<h2 id="bn-t">Clases del centro</h2><p>La agenda de turnos todavía no está conectada.</p>'); return; }
+  if (!sesionAgenda()) return loginAgenda();
+  cajaClases('<h2 id="bn-t">Clases del centro</h2><p>Cargando clases…</p>');
+  const r = await apiAgenda('clases_config', {});
+  if (!r.ok) { if (r.error === 'sesion_invalida') return loginAgenda(); cajaClases(`<h2 id="bn-t">Clases del centro</h2><p class="bn-err">${esc(errClase(r.error))}</p>`); return; }
+  listaClases = r.clases || []; pintarListaClases();
+}
+function loginAgenda(msg) {
+  const f = cajaClases(`<form id="bn-lg" novalidate><h2 id="bn-t">Ingresar a la agenda</h2><p>Para cambiar clases, entre con el correo y la clave de la <b>Agenda de turnos</b>. Queda guardado en este dispositivo.</p>
+    <label class="bn-l" for="bn-lg-e">Correo</label><input type="text" id="bn-lg-e" inputmode="email" autocomplete="username" value="${esc((D().auth && D().auth.currentUser && D().auth.currentUser.email) || '')}">
+    <label class="bn-l" for="bn-lg-c">Clave</label><input type="password" id="bn-lg-c" autocomplete="current-password">
+    <div class="bn-err" id="bn-lg-err" role="alert">${esc(msg || '')}</div><div class="bn-fila"><button type="submit" class="bn-btn" id="bn-lg-ok">Ingresar</button></div></form>`);
+  $('bn-lg-e').focus();
+  $('bn-lg').onsubmit = async (ev) => {
+    ev.preventDefault(); const b = $('bn-lg-ok'); b.disabled = true; b.textContent = 'Ingresando…';
+    const r = await llamar('login', { email: $('bn-lg-e').value.trim(), clave: $('bn-lg-c').value });
+    if (!r.ok) { b.disabled = false; b.textContent = 'Ingresar'; $('bn-lg-err').textContent = errClase(r.error); return; }
+    guardarSesionAgenda({ tok: r.token, user: r.usuario }); adminClases();
+  };
+  return f;
+}
+function textoHorarios(hs) {
+  const porHora = {}; (hs || []).forEach((h) => { (porHora[h.desde] = porHora[h.desde] || []).push(h.dia); });
+  return Object.entries(porHora).sort((a, b) => a[0].localeCompare(b[0])).map(([hh, ds]) => DIAS.filter((d) => ds.includes(d[0])).map((d) => d[1]).join(', ') + ' ' + hh).join(' · ') || 'Sin horarios';
+}
+function pintarListaClases() {
+  const acts = ((negocio && negocio.actividades) || []).filter((id) => ((CAT().find((a) => a.id === id) || {}).clases || []).length);
+  const grupos = acts.map((id) => ({ id, nombre: nombreActividad(id) }));
+  if (listaClases.some((c) => c.actividad === 'propia' || !acts.includes(c.actividad))) grupos.push({ id: 'propia', nombre: 'Otras clases' });
+  if (!grupos.length) grupos.push({ id: 'propia', nombre: 'Clases' });
+  const de = (g) => listaClases.filter((c) => g.id === 'propia' ? (c.actividad === 'propia' || !acts.includes(c.actividad)) : c.actividad === g.id);
+  cajaClases(`<h2 id="bn-t">Clases del centro</h2><p>Sume clases, cambie el profesor, el cupo o los horarios. Los cambios se ven enseguida en la agenda, en la página de reservas y en el inicio.</p>
+    ${grupos.map((g) => `<h3 class="bn-sub">${esc(g.nombre)}</h3><div class="bn-lista">${de(g).map((c) => `<div class="bn-li"><span><b>${esc(c.nombre)}</b><small>${esc([c.profesor ? 'Prof. ' + c.profesor : 'Sin profesor asignado', 'cupo ' + c.cupo, c.duracion_min + ' min'].join(' · '))}</small><small>${esc(textoHorarios(c.horarios))}${c.publico ? '' : ' · no se muestra en reservas'}</small></span><span style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button type="button" class="bn-btn sec" data-ed="${esc(c.servicio_id)}">Editar</button><button type="button" class="bn-btn sec" data-qt="${esc(c.servicio_id)}" aria-label="Quitar ${esc(c.nombre)}">Quitar</button></span></div>`).join('') || '<p class="bn-aviso">Todavía no hay clases acá.</p>'}</div>
+    <div class="bn-fila" style="margin-top:10px"><button type="button" class="bn-btn" data-nueva="${esc(g.id)}">+ Agregar clase</button></div>`).join('')}
+    <div class="bn-err" id="bn-cl-err" role="alert"></div>`);
+  const caja = $('bn-caja');
+  caja.addEventListener('click', async (e) => {
+    const n = e.target.closest('[data-nueva]'); if (n) return formClase(null, n.dataset.nueva);
+    const ed = e.target.closest('[data-ed]'); if (ed) return formClase(listaClases.find((c) => c.servicio_id === ed.dataset.ed));
+    const q = e.target.closest('[data-qt]');
+    if (q) {
+      const c = listaClases.find((x) => x.servicio_id === q.dataset.qt); if (!c || !confirm(`¿Quitar la clase «${c.nombre}»? Deja de aparecer en la agenda y en la página de reservas. Los turnos ya tomados no se borran.`)) return;
+      q.disabled = true; q.textContent = 'Quitando…';
+      const r = await apiAgenda('quitar_clase', { servicio_id: c.servicio_id });
+      if (!r.ok) { if (r.error === 'sesion_invalida') return loginAgenda('Vuelva a ingresar para continuar.'); q.disabled = false; q.textContent = 'Quitar'; $('bn-cl-err').textContent = errClase(r.error); return; }
+      listaClases = listaClases.filter((x) => x.servicio_id !== c.servicio_id); pintarListaClases(); refrescarHubBienestar();
+    }
+  });
+}
+function filaHorario(dias, hora) {
+  return `<div class="bn-hor"><div class="bn-dias" role="group" aria-label="Días">${DIAS.map(([d, t]) => `<label class="bn-dia-b"><input type="checkbox" value="${d}"${(dias || []).includes(d) ? ' checked' : ''}><span>${t}</span></label>`).join('')}</div><label class="bn-hora">Empieza a las<input type="time" step="1800" value="${esc(hora || '19:00')}"></label><button type="button" class="bn-quita-h" aria-label="Quitar este horario">✕</button></div>`;
+}
+function formClase(c, actividad) {
+  const porHora = {}; ((c && c.horarios) || []).forEach((h) => { (porHora[h.desde] = porHora[h.desde] || []).push(h.dia); });
+  const filas = Object.entries(porHora).sort((a, b) => a[0].localeCompare(b[0]));
+  const durs = [30, 45, 60, 90, 120, 150, 180].filter((m) => m % 30 === 0);
+  cajaClases(`<form id="bn-fc" novalidate><h2 id="bn-t">${c ? 'Editar clase' : 'Agregar clase'}</h2>
+    <label class="bn-l" for="fc-n">Clase</label><input type="text" id="fc-n" maxlength="60" placeholder="Ej. Salsa, Spinning, Zumba" value="${esc((c && c.nombre) || '')}">
+    <label class="bn-l" for="fc-p">Profesor/a</label><input type="text" id="fc-p" maxlength="60" placeholder="Ej. Ana Gómez" value="${esc((c && c.profesor) || '')}">
+    <div class="bn-vence"><label>Cupo (personas)<input type="number" id="fc-c" min="2" max="500" inputmode="numeric" value="${esc((c && c.cupo) || 15)}"></label>
+    <label>Duración<select id="fc-d">${durs.map((m) => `<option value="${m}"${((c && c.duracion_min) || 60) === m ? ' selected' : ''}>${m} min</option>`).join('')}</select></label></div>
+    <label class="bn-l" for="fc-s">Sala (opcional)</label><input type="text" id="fc-s" maxlength="60" placeholder="Ej. Salón de baile" value="${esc((c && c.sala) || '')}">
+    <label class="bn-l">Días y hora de inicio</label><div id="fc-hs">${(filas.length ? filas : [['19:00', []]]).map(([h, ds]) => filaHorario(ds, h)).join('')}</div>
+    <button type="button" class="bn-btn sec" id="fc-mas" style="margin-top:8px">+ Otro horario</button>
+    <label class="bn-act" style="margin-top:14px"><input type="checkbox" id="fc-pub"${!c || c.publico ? ' checked' : ''}><span><b>Mostrar en la página de reservas</b><small>Si la destilda, solo se puede anotar a alguien desde la agenda.</small></span></label>
+    <div class="bn-err" id="fc-err" role="alert"></div>
+    <div class="bn-fila"><button type="submit" class="bn-btn" id="fc-ok">Guardar clase</button><button type="button" class="bn-btn sec" id="fc-no">Volver</button></div></form>`);
+  const st = document.createElement('style'); st.textContent = '.bn-hor{display:grid;gap:8px;padding:10px;border:1px solid var(--line,#2a2d33);border-radius:10px;margin-top:8px;position:relative}.bn-dias{display:flex;flex-wrap:wrap;gap:6px;padding-right:40px}.bn-dia-b input{position:absolute;opacity:0;pointer-events:none}.bn-dia-b span{display:inline-block;min-width:44px;padding:9px 6px;text-align:center;border:1px solid var(--gold,#d4af37);border-radius:8px;cursor:pointer;color:var(--gold-light,#e8c766)}.bn-dia-b input:checked+span{background:var(--gold,#d4af37);color:#0a0a0a;font-weight:700}.bn-dia-b input:focus-visible+span{outline:2px solid #fff}.bn-hora{display:flex;gap:10px;align-items:center;color:var(--text-muted,#a8a396)}.bn-hora input{padding:10px;border-radius:8px;border:1px solid var(--line,#2a2d33);background:var(--bg-base,#0a0a0a);color:inherit;font-size:1rem}.bn-quita-h{position:absolute;top:8px;right:8px;width:36px;height:36px;border-radius:50%;border:1px solid var(--line,#2a2d33);background:transparent;color:inherit;cursor:pointer}.bn-caja select{width:100%;padding:12px;border-radius:8px;border:1px solid var(--line,#2a2d33);background:var(--bg-base,#0a0a0a);color:inherit;font-size:1rem}.bn-caja input[type=number]{width:100%;padding:12px;border-radius:8px;border:1px solid var(--line,#2a2d33);background:var(--bg-base,#0a0a0a);color:inherit;font-size:1rem}';
+  $('bn-caja').appendChild(st);
+  $('fc-n').focus();
+  $('fc-no').onclick = pintarListaClases;
+  $('fc-mas').onclick = () => $('fc-hs').insertAdjacentHTML('beforeend', filaHorario([], '19:00'));
+  $('fc-hs').addEventListener('click', (e) => { const b = e.target.closest('.bn-quita-h'); if (b && $('fc-hs').children.length > 1) b.parentNode.remove(); });
+  $('bn-fc').onsubmit = async (ev) => {
+    ev.preventDefault();
+    const err = (m) => { $('fc-err').textContent = m; };
+    const horarios = [...$('fc-hs').querySelectorAll('.bn-hor')].map((h) => ({ dias: [...h.querySelectorAll('.bn-dias input:checked')].map((i) => Number(i.value)), desde: (h.querySelector('input[type=time]').value || '').slice(0, 5) })).filter((h) => h.dias.length || h.desde);
+    const datos = { nombre: $('fc-n').value.trim(), profesor: $('fc-p').value.trim(), cupo: Number($('fc-c').value), duracion_min: Number($('fc-d').value), sala: $('fc-s').value.trim(), publico: $('fc-pub').checked, horarios, actividad: c ? c.actividad : actividad };
+    if (datos.nombre.length < 2) return err(ERR_CLASE.falta_nombre_clase);
+    if (!(datos.cupo >= 2 && datos.cupo <= 500)) return err(ERR_CLASE.cupo_invalido);
+    if (!horarios.length || horarios.some((h) => !h.dias.length || !/^\d{2}:\d{2}$/.test(h.desde))) return err(ERR_CLASE.horario_invalido);
+    if (c) datos.servicio_id = c.servicio_id;
+    const b = $('fc-ok'); b.disabled = true; b.textContent = 'Guardando…';
+    const r = await apiAgenda('guardar_clase', datos);
+    if (!r.ok) { if (r.error === 'sesion_invalida') return loginAgenda('Vuelva a ingresar para guardar la clase.'); b.disabled = false; b.textContent = 'Guardar clase'; return err(errClase(r.error)); }
+    await adminClases(); refrescarHubBienestar();
+  };
+}

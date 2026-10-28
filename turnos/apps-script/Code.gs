@@ -92,7 +92,7 @@ function despachar_(p) {
   if (a === 'login') return login_(p.email, p.clave);
   const u = validarToken_(p.token);
   if (!u) return { ok: false, error: 'sesion_invalida' };
-  const PRIV = { agenda: agenda_, historial: historial_, vincular_cliente: vincularCliente_, crear_turno: crearTurno_, cambiar_estado: cambiarEstado_, reprogramar: reprogramar_, guardar_bloqueo: guardarBloqueo_, guardar_actividad: guardarActividad_, quitar_actividad: quitarActividad_, recordatorios_manana: recordatoriosManana_, marcar_avisado: marcarAvisado_ };
+  const PRIV = { agenda: agenda_, historial: historial_, vincular_cliente: vincularCliente_, crear_turno: crearTurno_, cambiar_estado: cambiarEstado_, reprogramar: reprogramar_, guardar_bloqueo: guardarBloqueo_, clases_config: clasesConfig_, guardar_clase: guardarClase_, quitar_clase: quitarClase_, recordatorios_manana: recordatoriosManana_, marcar_avisado: marcarAvisado_ };
   if (!PRIV[a]) return { ok: false, error: 'accion_desconocida' };
   return PRIV[a](p, u);
 }
@@ -112,7 +112,7 @@ function configPublica_() {
   const servicios = activos_(HOJAS.servicios).filter(s => String(s.publico).toLowerCase() !== 'no');
   const recursos = activos_(HOJAS.recursos).filter(r => String(r.tipo) !== 'sala' || true);
   return { ok: true, negocio: { nombre: c.nombre, rubro: c.rubro, telefono: c.telefono, modo_reserva: c.modo_reserva, ventana_dias: c.ventana_dias, cancelacion_limite_horas: c.cancelacion_limite_horas },
-    servicios: servicios.map(s => ({ id: String(s.id), nombre: s.nombre, duracion_min: Number(s.duracion_min), recursos: lista_(s.recursos), cupo: cupoDe_(s), actividad: s.actividad || '' })),
+    servicios: servicios.map(s => ({ id: String(s.id), nombre: s.nombre, duracion_min: Number(s.duracion_min), recursos: lista_(s.recursos), cupo: cupoDe_(s), actividad: s.actividad || '', profesor: s.profesor || '' })),
     recursos: recursos.map(r => ({ id: String(r.id), nombre: r.nombre, tipo: r.tipo, color: r.color })) };
 }
 
@@ -139,7 +139,7 @@ function clasesDias_(p) {
         horarios.filter(h => String(h.recurso_id) === rid && Number(h.dia_semana) === dow).forEach(h => {
           const ini = aMin_(f, h.desde); if (ini + dur > aMin_(f, h.hasta)) return;
           let usados = 0; for (let t = ini; t < ini + dur; t += c.paso_min) usados = Math.max(usados, ocupados[claveSlot_(rid, t)] || 0);
-          out.push({ fecha: f, hora: deMin_(ini).hora, servicio_id: String(serv.id), clase: serv.nombre, sala: recs[rid] || '', cupo: cupo, libres: Math.max(cupo - usados, 0), suspendida: enBloqueo_(bloqueos, rid, ini, ini + dur), pasada: ini + dur <= ahora });
+          out.push({ fecha: f, hora: deMin_(ini).hora, servicio_id: String(serv.id), clase: serv.nombre, profesor: serv.profesor || '', sala: recs[rid] || '', cupo: cupo, libres: Math.max(cupo - usados, 0), suspendida: enBloqueo_(bloqueos, rid, ini, ini + dur), pasada: ini + dur <= ahora });
         });
       }
     });
@@ -540,7 +540,7 @@ function agregarFila_(hoja, columnas, obj) {
 const CATALOGO_ = {"version":1,"actividades":[{"id":"gimnasio","nombre":"Gimnasio y musculación","texto":"Sala de musculación, planes mensuales y evaluaciones.","persona":"socio","recurso":{"nombre":"Evaluación física","tipo":"profesional"},"servicios":[{"nombre":"Evaluación física inicial","duracion_min":60},{"nombre":"Plan de entrenamiento personalizado","duracion_min":60},{"nombre":"Entrenamiento personal","duracion_min":60}],"horarios":[{"dias":[1,2,3,4,5],"desde":"09:00","hasta":"13:00"},{"dias":[1,2,3,4,5],"desde":"16:00","hasta":"20:00"}]},{"id":"clases","nombre":"Clases grupales","texto":"Funcional, spinning, zumba y otras clases con cupos.","persona":"alumno","clases":[{"nombre":"Funcional","cupo":15,"duracion_min":60,"sala":"Sala funcional","horarios":[{"dias":[1,3,5],"desde":"08:00","hasta":"09:00"},{"dias":[1,3,5],"desde":"19:00","hasta":"20:00"}]},{"nombre":"Spinning","cupo":20,"duracion_min":60,"sala":"Sala de spinning","horarios":[{"dias":[2,4],"desde":"08:00","hasta":"09:00"},{"dias":[1,2,3,4,5],"desde":"20:00","hasta":"21:00"}]},{"nombre":"Zumba","cupo":25,"duracion_min":60,"sala":"Salón de baile","horarios":[{"dias":[2,4],"desde":"19:00","hasta":"20:00"}]}]},{"id":"yoga","nombre":"Yoga y pilates","texto":"Clases de yoga, pilates y estiramiento con cupos reducidos.","persona":"alumno","clases":[{"nombre":"Yoga","cupo":12,"duracion_min":60,"sala":"Sala de yoga","horarios":[{"dias":[1,3],"desde":"09:00","hasta":"10:00"},{"dias":[2,4],"desde":"19:00","hasta":"20:00"}]},{"nombre":"Pilates","cupo":8,"duracion_min":60,"sala":"Sala de pilates","horarios":[{"dias":[1,3,5],"desde":"10:00","hasta":"11:00"},{"dias":[2,4],"desde":"18:00","hasta":"19:00"}]}]},{"id":"spa","nombre":"Spa y masajes","texto":"Masajes, circuitos de spa y tratamientos corporales.","persona":"cliente","recurso":{"nombre":"Masajista","tipo":"profesional"},"servicios":[{"nombre":"Masaje descontracturante","duracion_min":60},{"nombre":"Masaje relajante","duracion_min":60},{"nombre":"Drenaje linfático","duracion_min":60},{"nombre":"Masaje con piedras calientes","duracion_min":90}],"horarios":[{"dias":[1,2,3,4,5],"desde":"10:00","hasta":"13:00"},{"dias":[1,2,3,4,5],"desde":"15:00","hasta":"20:00"}]},{"id":"peluqueria","nombre":"Peluquería","texto":"Cortes, color, brushing y peinados.","persona":"cliente","recurso":{"nombre":"Peluquero/a","tipo":"profesional"},"servicios":[{"nombre":"Corte","duracion_min":30},{"nombre":"Corte y brushing","duracion_min":60},{"nombre":"Color","duracion_min":120},{"nombre":"Mechas o balayage","duracion_min":180},{"nombre":"Peinado para evento","duracion_min":60}],"horarios":[{"dias":[2,3,4,5,6],"desde":"09:00","hasta":"13:00"},{"dias":[2,3,4,5,6],"desde":"15:00","hasta":"20:00"}]},{"id":"barberia","nombre":"Barbería","texto":"Cortes y arreglo de barba.","persona":"cliente","recurso":{"nombre":"Barbero","tipo":"profesional"},"servicios":[{"nombre":"Corte de pelo","duracion_min":30},{"nombre":"Corte y barba","duracion_min":60},{"nombre":"Arreglo de barba","duracion_min":30}],"horarios":[{"dias":[2,3,4,5,6],"desde":"10:00","hasta":"13:00"},{"dias":[2,3,4,5,6],"desde":"15:00","hasta":"20:00"}]},{"id":"unas","nombre":"Uñas","texto":"Manicuría, esmaltado semipermanente y esculpidas.","persona":"cliente","recurso":{"nombre":"Manicura","tipo":"profesional"},"servicios":[{"nombre":"Manicuría","duracion_min":60},{"nombre":"Esmaltado semipermanente","duracion_min":60},{"nombre":"Uñas esculpidas","duracion_min":120},{"nombre":"Pedicuría","duracion_min":60}],"horarios":[{"dias":[2,3,4,5,6],"desde":"09:00","hasta":"13:00"},{"dias":[2,3,4,5,6],"desde":"15:00","hasta":"19:00"}]},{"id":"estetica","nombre":"Estética y depilación","texto":"Limpiezas faciales, depilación, pestañas y cejas.","persona":"cliente","recurso":{"nombre":"Esteticista","tipo":"profesional"},"servicios":[{"nombre":"Limpieza facial","duracion_min":60},{"nombre":"Depilación definitiva","duracion_min":30},{"nombre":"Perfilado de cejas","duracion_min":30},{"nombre":"Lifting de pestañas","duracion_min":60}],"horarios":[{"dias":[1,2,3,4,5],"desde":"10:00","hasta":"13:00"},{"dias":[1,2,3,4,5],"desde":"15:00","hasta":"19:00"}]},{"id":"consultorio","nombre":"Nutrición y kinesiología","texto":"Consultas individuales de nutrición, kinesiología o entrenamiento terapéutico.","persona":"paciente","recurso":{"nombre":"Profesional de salud","tipo":"profesional"},"servicios":[{"nombre":"Consulta nutricional","duracion_min":60},{"nombre":"Sesión de kinesiología","duracion_min":60},{"nombre":"Control de seguimiento","duracion_min":30}],"horarios":[{"dias":[1,2,3,4,5],"desde":"09:00","hasta":"13:00"},{"dias":[1,3,5],"desde":"16:00","hasta":"19:00"}]}]};
 // </CATALOGO>
 const COL_RECURSOS = ['id', 'nombre', 'tipo', 'color', 'usuario_email', 'activo'];
-const COL_SERVICIOS = ['id', 'nombre', 'duracion_min', 'recursos', 'publico', 'activo', 'cupo', 'actividad'];
+const COL_SERVICIOS = ['id', 'nombre', 'duracion_min', 'recursos', 'publico', 'activo', 'cupo', 'actividad', 'profesor'];
 const COL_HORARIOS = ['recurso_id', 'dia_semana', 'desde', 'hasta'];
 const COLORES_ = ['#D4AF37', '#4CC38A', '#22D3EE', '#9E7535', '#E8C766', '#A9B98D'];
 // Ejecutar a mano UNA vez (Ejecutar > cargarActividades) después de poner en la hoja «config» la fila  actividades = gimnasio,clases,spa
@@ -578,45 +578,71 @@ function cargarActividades() {
   return nuevos;
 }
 
-// ── Actividades propias del centro (las que no están en el catálogo) ──
-// Las carga la Dirección desde el Hub (Cambiar actividades → Cargar nueva actividad). Crea la sala o el responsable, el servicio y sus horarios.
-// Clase grupal: cupo de 2 a 500 y cada horario es UNA clase que empieza en «desde». Turno individual: horario de atención, un turno por tramo.
-function guardarActividad_(p, u) {
+// ── Clases del centro (Hub → Administrar clases) ─────────────────
+// La Dirección suma, edita o quita clases con cupo: nombre, profesor, cupo, duración, días y hora de inicio.
+// Cada clase tiene su propia sala (recurso) para que los cupos de dos clases no se mezclen.
+function clasesConfig_(p, u) {
   if (ROLES_GESTION.indexOf(u.rol) < 0) throw falla_('sin_permiso');
-  const c = config_(), clase = p.tipo === 'clase';
-  const nombre = limpiar_(p.nombre, 60); if (nombre.length < 3) throw falla_('falta_nombre_actividad');
-  const cupo = clase ? Math.floor(Number(p.cupo)) : '';
-  if (clase && !(cupo >= 2 && cupo <= 500)) throw falla_('cupo_invalido');
-  const dur = Math.floor(Number(p.duracion_min));
-  if (!(dur >= c.paso_min && dur <= 480 && dur % c.paso_min === 0)) throw falla_('duracion_invalida');
-  const resp = limpiar_(p.responsable, 60) || (clase ? 'Sala de ' + nombre : nombre);
-  const hs = (Array.isArray(p.horarios) ? p.horarios : []).slice(0, 30);
-  if (!hs.length) throw falla_('faltan_horarios');
-  hs.forEach(h => {
-    const dias = Array.isArray(h.dias) ? h.dias.map(Number) : [];
-    if (!validaHora_(h.desde) || !validaHora_(h.hasta) || String(h.hasta) <= String(h.desde) || !dias.length || dias.some(d => !(d >= 0 && d <= 6) || d % 1)) throw falla_('horario_invalido');
-    if (aMin_('2026-01-05', h.hasta) - aMin_('2026-01-05', h.desde) < dur) throw falla_('horario_corto');
+  const recs = {}; leerHoja_(HOJAS.recursos).forEach(r => { recs[String(r.id)] = r; });
+  const hs = leerHoja_(HOJAS.horarios);
+  const clases = activos_(HOJAS.servicios).filter(sv => cupoDe_(sv) > 1).map(sv => {
+    const rid = lista_(sv.recursos)[0] || '';
+    return { servicio_id: String(sv.id), nombre: sv.nombre, actividad: sv.actividad || '', profesor: sv.profesor || '', cupo: cupoDe_(sv), duracion_min: Number(sv.duracion_min), publico: String(sv.publico).toLowerCase() !== 'no', recurso_id: rid, sala: (recs[rid] || {}).nombre || '',
+      horarios: hs.filter(h => String(h.recurso_id) === rid).map(h => ({ dia: Number(h.dia_semana), desde: String(h.desde) })).sort((a, b) => a.dia - b.dia || a.desde.localeCompare(b.desde)) };
   });
+  return { ok: true, clases: clases };
+}
+function datosClase_(p, c) {
+  const nombre = limpiar_(p.nombre, 60); if (nombre.length < 2) throw falla_('falta_nombre_clase');
+  const cupo = Math.floor(Number(p.cupo)); if (!(cupo >= 2 && cupo <= 500)) throw falla_('cupo_invalido');
+  const dur = Math.floor(Number(p.duracion_min)); if (!(dur >= c.paso_min && dur <= 480 && dur % c.paso_min === 0)) throw falla_('duracion_invalida');
+  const hs = []; (Array.isArray(p.horarios) ? p.horarios : []).slice(0, 40).forEach(h => {
+    const dias = Array.isArray(h.dias) ? h.dias.map(Number) : [];
+    if (!validaHora_(h.desde) || !dias.length || dias.some(d => !(d >= 0 && d <= 6) || d % 1)) throw falla_('horario_invalido');
+    const fin = aMin_('2026-01-05', h.desde) + dur; if (fin > aMin_('2026-01-05', '23:59')) throw falla_('horario_invalido');
+    dias.forEach(d => hs.push({ dia: d, desde: h.desde, hasta: deMin_(fin).hora }));
+  });
+  if (!hs.length) throw falla_('faltan_horarios');
+  return { nombre: nombre, cupo: cupo, dur: dur, hs: hs, profesor: limpiar_(p.profesor, 60), sala: limpiar_(p.sala, 60), publico: p.publico === false ? 'no' : 'si', actividad: /^[a-z0-9_]{2,30}$/.test(String(p.actividad || '')) ? String(p.actividad) : 'propia' };
+}
+function guardarClase_(p, u) {
+  if (ROLES_GESTION.indexOf(u.rol) < 0) throw falla_('sin_permiso');
+  const c = config_(), d = datosClase_(p, c);
   const lock = LockService.getScriptLock(); if (!lock.tryLock(15000)) throw falla_('sistema_ocupado');
   try {
-    const rec = new Set(leerHojaDirecto_(HOJAS.recursos).map(r => String(r.id))), srv = new Set(leerHojaDirecto_(HOJAS.servicios).map(r => String(r.id)));
-    const slug = nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 24) || 'actividad';
-    let n = 1, suf = 'P_' + slug; while (rec.has('R_' + suf) || srv.has('S_' + suf)) suf = 'P_' + slug + '_' + (++n);
-    const rid = 'R_' + suf, sid = 'S_' + suf;
-    agregarFila_(HOJAS.recursos, COL_RECURSOS, { id: rid, nombre: resp, tipo: clase ? 'sala' : 'profesional', color: COLORES_[rec.size % COLORES_.length], usuario_email: '', activo: 'si' });
-    agregarFila_(HOJAS.servicios, COL_SERVICIOS, { id: sid, nombre: nombre, duracion_min: dur, recursos: rid, publico: p.publico === false ? 'no' : 'si', activo: 'si', cupo: cupo, actividad: 'propia' });
-    hs.forEach(h => h.dias.map(Number).forEach(d => agregarFila_(HOJAS.horarios, COL_HORARIOS, { recurso_id: rid, dia_semana: d, desde: h.desde, hasta: h.hasta })));
+    const shS = obtenerHoja_(HOJAS.servicios), hS = asegurarColumnas_(shS, COL_SERVICIOS);
+    const shR = obtenerHoja_(HOJAS.recursos), hR = asegurarColumnas_(shR, COL_RECURSOS);
+    let sid = String(p.servicio_id || ''), rid;
+    if (sid) { // editar
+      const fila = buscarFila_(shS, sid); if (fila < 0) throw falla_('servicio_invalido');
+      const actual = shS.getRange(fila, 1, 1, hS.length).getValues()[0];
+      rid = lista_(actual[hS.indexOf('recursos')])[0]; if (!rid) throw falla_('servicio_invalido');
+      const set = (k, v) => shS.getRange(fila, hS.indexOf(k) + 1).setValue(valorCelda_(k, v));
+      set('nombre', d.nombre); set('profesor', d.profesor); set('cupo', d.cupo); set('duracion_min', d.dur); set('publico', d.publico); set('activo', 'si');
+      if (d.sala) { const fr = buscarFila_(shR, rid); if (fr > 0) shR.getRange(fr, hR.indexOf('nombre') + 1).setValue(valorCelda_('nombre', d.sala)); }
+      const shH = obtenerHoja_(HOJAS.horarios), dh = shH.getDataRange().getValues(), iR = dh[0].map(x => String(x).trim().toLowerCase()).indexOf('recurso_id');
+      for (let i = dh.length - 1; i >= 1; i--) if (String(dh[i][iR]) === rid) shH.deleteRow(i + 1);
+    } else { // nueva
+      const rec = new Set(leerHojaDirecto_(HOJAS.recursos).map(r => String(r.id))), srv = new Set(leerHojaDirecto_(HOJAS.servicios).map(r => String(r.id)));
+      const slug = d.nombre.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 24) || 'clase';
+      let n = 1, suf = 'P_' + slug; while (rec.has('R_' + suf) || srv.has('S_' + suf)) suf = 'P_' + slug + '_' + (++n);
+      rid = 'R_' + suf; sid = 'S_' + suf;
+      agregarFila_(HOJAS.recursos, COL_RECURSOS, { id: rid, nombre: d.sala || 'Sala de ' + d.nombre, tipo: 'sala', color: COLORES_[rec.size % COLORES_.length], usuario_email: '', activo: 'si' });
+      agregarFila_(HOJAS.servicios, COL_SERVICIOS, { id: sid, nombre: d.nombre, duracion_min: d.dur, recursos: rid, publico: d.publico, activo: 'si', cupo: d.cupo, actividad: d.actividad, profesor: d.profesor });
+    }
+    d.hs.forEach(h => agregarFila_(HOJAS.horarios, COL_HORARIOS, { recurso_id: rid, dia_semana: h.dia, desde: h.desde, hasta: h.hasta }));
     return { ok: true, servicio_id: sid, recurso_id: rid };
   } finally { lock.releaseLock(); HOJAS_CACHE.forEach(invalidarHoja_); }
 }
-// Quitar una actividad propia: la deja inactiva (no borra turnos ni historial). Solo actividades propias (id S_P_…).
-function quitarActividad_(p, u) {
+// Quitar una clase: queda inactiva (no borra turnos ni historial) y se puede volver a activar en la planilla.
+function quitarClase_(p, u) {
   if (ROLES_GESTION.indexOf(u.rol) < 0) throw falla_('sin_permiso');
-  const sid = String(p.servicio_id || ''); if (!/^S_P_[a-z0-9_]+$/.test(sid)) throw falla_('servicio_invalido');
+  const sid = String(p.servicio_id || ''); if (!/^S_[A-Za-z0-9_]+$/.test(sid)) throw falla_('servicio_invalido');
   const lock = LockService.getScriptLock(); if (!lock.tryLock(15000)) throw falla_('sistema_ocupado');
   try {
     const sh = obtenerHoja_(HOJAS.servicios), h = asegurarColumnas_(sh, COL_SERVICIOS), fila = buscarFila_(sh, sid);
     if (fila < 0) throw falla_('servicio_invalido');
+    if (!(Number(sh.getRange(fila, h.indexOf('cupo') + 1).getValues()[0][0]) > 1)) throw falla_('servicio_invalido');
     sh.getRange(fila, h.indexOf('activo') + 1).setValue('no');
     return { ok: true };
   } finally { lock.releaseLock(); invalidarHoja_(HOJAS.servicios); }

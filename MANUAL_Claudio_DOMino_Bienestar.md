@@ -26,6 +26,13 @@ Dirección (todo) · Profesor/a o profesional (ve su propia agenda) · Recepció
 - Los seguimientos van en tres pasos: **Por hacer** (nadie empezó), **En gestión** (alguien ya se ocupa, por ejemplo escribió y espera respuesta) y **Resuelto**. Sirven para avisar cuotas vencidas, pedir aptos médicos o llamar a quien dejó de venir.
 - Si el centro suma una actividad nueva desde «Cambiar actividades», The DOM Studio Web la deja lista en la agenda y en la página de reservas.
 
+## Administrar clases (Dirección)
+- En el inicio, en el recuadro del centro, botón **Administrar clases**. Pide una sola vez el correo y la clave de la Agenda de turnos.
+- Muestra las clases agrupadas por actividad (Clases grupales, Yoga y pilates, Otras clases) con profesor, cupo, duración y horarios.
+- **+ Agregar clase**: nombre (Salsa, Spinning…), profesor/a, cupo, duración, sala (opcional), días y hora de inicio (se pueden sumar varios horarios) y si se muestra en la página de reservas.
+- **Editar**: cambia profesor, cupo, duración u horarios, también de las clases que venían cargadas. **Quitar**: la clase deja de aparecer; los turnos ya tomados no se borran.
+- Los cambios se ven enseguida en la agenda, en la página de reservas y en «Clases de hoy».
+
 ## Cuota y apto médico de cada socio
 - Se cargan al registrar al socio (opcional) o en su ficha, en el bloque **Cuota y apto médico**: fecha de vencimiento de la cuota y del apto. La ficha muestra si está al día, por vencer o vencido.
 - Todavía no hay planes ni cobros: solo la fecha de vencimiento, para avisar a tiempo.
