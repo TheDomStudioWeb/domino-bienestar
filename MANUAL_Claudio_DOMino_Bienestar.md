@@ -26,6 +26,11 @@ Dirección (todo) · Profesor/a o profesional (ve su propia agenda) · Recepció
 - Los seguimientos van en tres pasos: **Por hacer** (nadie empezó), **En gestión** (alguien ya se ocupa, por ejemplo escribió y espera respuesta) y **Resuelto**. Sirven para avisar cuotas vencidas, pedir aptos médicos o llamar a quien dejó de venir.
 - Si el centro suma una actividad nueva desde «Cambiar actividades», The DOM Studio Web la deja lista en la agenda y en la página de reservas.
 
+## Actividades y salones
+- Al entrar por primera vez (y después desde el botón **Actividades y salones**) hay dos pestañas: **Actividades** y **Salones**.
+- En Salones se indica cuántos salones tiene el centro (con − y +) y se escribe el nombre de cada uno: con número (Salón 1), con nombre o con actividad (Musculación, Aeróbica, Baile). No puede haber dos con el mismo nombre.
+- Al agregar o editar una clase, el salón se elige de esa lista y es obligatorio. Dos clases no pueden darse a la vez en el mismo salón.
+
 ## Administrar clases (Dirección)
 - En el inicio, en el recuadro del centro, botón **Administrar clases**. Pide una sola vez el correo y la clave de la Agenda de turnos.
 - Muestra las clases agrupadas por actividad (Clases grupales, Yoga y pilates, Otras clases) con profesor, cupo, duración y horarios.
