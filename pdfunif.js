@@ -340,7 +340,7 @@ async function generar() {
       }
     }
     const nombre = ($('pdf-nombre').value || 'Documento unificado').trim().replace(/[\\/:*?"<>|]+/g, ' ').slice(0, 80);
-    out.setTitle(nombre); out.setProducer('DOMino Profesional · The DOM Studio Web');
+    out.setTitle(nombre); out.setProducer('DOMino Bienestar · The DOM Studio Web');
     const bytes = await out.save();
     resultado = new Blob([bytes], { type: 'application/pdf' }); resultado.nombre = nombre + '.pdf';
     $('pdf-res-nombre').textContent = resultado.nombre;

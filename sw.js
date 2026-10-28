@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bienestar-v2';
+const CACHE_NAME = 'domino-bienestar-v1'; // único por app: las tres apps comparten el mismo dominio
 const urlsToCache = [
     './',
     'index.html',
@@ -23,7 +23,7 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
     event.waitUntil(
-        caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
+        caches.keys().then((keys) => Promise.all(keys.filter((k) => k.startsWith('domino-bienestar-') && k !== CACHE_NAME).map((k) => caches.delete(k))))
     );
     self.clients.claim();
 });
