@@ -27,8 +27,9 @@ Dirección (todo) · Profesor/a o profesional (ve su propia agenda) · Recepció
 - Si el centro suma una actividad nueva desde «Cambiar actividades», The DOM Studio Web la deja lista en la agenda y en la página de reservas.
 
 ## Actividades y salones
-- Al entrar por primera vez (y después desde el botón **Actividades y salones**) hay dos pestañas: **Actividades** y **Salones**.
+- Al entrar por primera vez hay dos pestañas: **Actividades** y **Salones**. Después se cambian desde los botones **Actividades** y **Salones** del recuadro del centro, en el inicio.
 - En Salones se indica cuántos salones tiene el centro (con − y +) y se escribe el nombre de cada uno: con número (Salón 1), con nombre o con actividad (Musculación, Aeróbica, Baile). No puede haber dos con el mismo nombre.
+- Cada salón tiene la casilla **Habilitado**. Si un salón se cierra (por arreglos, por ejemplo), se destilda: deja de ofrecerse al cargar clases y sus clases figuran como «Salón inhabilitado» en el inicio. Esas clases hay que pasarlas a otro salón o quitarlas en Administrar clases; hasta entonces siguen apareciendo en la página de reservas.
 - Al agregar o editar una clase, el salón se elige de esa lista y es obligatorio. Dos clases no pueden darse a la vez en el mismo salón.
 
 ## Administrar clases (Dirección)
