@@ -26,6 +26,7 @@ function estilos() {
   s.textContent = `
   .bn-fondo{position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,.78);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:max(16px,env(safe-area-inset-top)) 16px 24px}
   .bn-tabs{display:flex;gap:6px;margin:18px 0 4px;border-bottom:1px solid var(--line,#2a2d33)}.bn-tab{flex:1;padding:12px 10px;border:0;border-bottom:3px solid transparent;background:transparent;color:var(--text-muted,#a8a396);font-weight:700;font-size:1rem;cursor:pointer}.bn-tab[aria-selected=true]{color:var(--gold-light,#e8c766);border-bottom-color:var(--gold,#d4af37)}
+  .bn-logo-fila{display:flex;gap:12px;align-items:center;flex-wrap:wrap}.bn-logo-prev{width:96px;height:96px;border:1px dashed var(--line,#2a2d33);border-radius:10px;display:grid;place-items:center;background:repeating-conic-gradient(#ffffff10 0 25%,transparent 0 50%) 0 0/16px 16px;overflow:hidden;flex:none}.bn-logo-prev img{max-width:88px;max-height:88px;object-fit:contain}.bn-logo-prev span{font-size:.8rem;color:var(--text-muted,#a8a396)}
   .bn-sal{display:flex;gap:10px;align-items:flex-end}.bn-hab{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:.8rem;color:var(--text-muted,#a8a396);cursor:pointer;min-width:84px}.bn-hab input{width:24px;height:24px;accent-color:#4CC38A}.bn-sal:has(.bn-hab input:not(:checked)) input[type=text]{opacity:.55;text-decoration:line-through}
   .bn-x{position:sticky;top:0;float:right;margin:-8px -6px 0 8px;width:44px;height:44px;border-radius:50%;border:1px solid var(--line,#2a2d33);background:var(--bg-base,#0a0a0a);color:var(--text-main,#f4f1ea);font-size:1.1rem;cursor:pointer;z-index:2}
   .bn-caja{background:var(--bg-panel,#16181c);border:1px solid var(--hairline,#d4af3740);border-radius:12px;width:100%;max-width:560px;margin:auto;padding:22px 20px;color:var(--text-main,#f4f1ea)}
@@ -52,6 +53,35 @@ function estilos() {
 }
 function cerrar() { const f = $('bn-fondo'); if (f) f.remove(); document.body.style.overflow = ''; }
 
+
+// ── Logo del centro: se guarda en la ficha del centro (config/negocio) como imagen embebida, sin necesidad de Storage ──
+// PNG: se achica a 256 px como máximo. SVG: se guarda tal cual (hasta 150 KB); en <img> los scripts de un SVG no se ejecutan.
+function prepararLogo(file) {
+  return new Promise((ok, mal) => {
+    const esSvg = /svg/i.test(file.type) || /\.svg$/i.test(file.name), esPng = /png/i.test(file.type) || /\.png$/i.test(file.name);
+    if (!esSvg && !esPng) return mal(new Error('El logo tiene que ser PNG o SVG.'));
+    if (file.size > 3 * 1024 * 1024) return mal(new Error('El archivo es muy pesado (máximo 3 MB).'));
+    const r = new FileReader();
+    r.onerror = () => mal(new Error('No se pudo leer el archivo.'));
+    if (esSvg) {
+      if (file.size > 150 * 1024) return mal(new Error('El SVG es muy pesado (máximo 150 KB). Pruebe con un PNG.'));
+      r.onload = () => { const t = String(r.result); if (!/<svg[\s>]/i.test(t)) return mal(new Error('El archivo no parece un SVG válido.')); ok('data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(t)))); };
+      r.readAsText(file);
+    } else {
+      r.onload = () => { const img = new Image(); img.onload = () => { const k = Math.min(1, 256 / Math.max(img.width, img.height)), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(img.width * k)); c.height = Math.max(1, Math.round(img.height * k)); c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); const url = c.toDataURL('image/png'); url.length > 700000 ? mal(new Error('El logo quedó muy pesado. Pruebe con una imagen más simple.')) : ok(url); }; img.onerror = () => mal(new Error('No se pudo abrir la imagen.')); img.src = String(r.result); };
+      r.readAsDataURL(file);
+    }
+  });
+}
+function aplicarLogo() {
+  const url = negocio && negocio.logo;
+  document.querySelectorAll('.brand-icon').forEach((el) => {
+    if (!el.dataset.orig) el.dataset.orig = el.getAttribute('src') || '';
+    if (url && /^data:image\/(png|svg\+xml);base64,/.test(url)) { el.src = url; el.alt = (negocio && negocio.nombre) || 'Logo'; el.removeAttribute('width'); el.removeAttribute('height'); el.style.height = '38px'; el.style.width = 'auto'; el.style.maxWidth = '120px'; el.style.objectFit = 'contain'; }
+    else if (el.dataset.orig) { el.src = el.dataset.orig; el.style.height = ''; el.style.width = ''; }
+  });
+}
+
 function asistente(tabInicial) {
   estilos(); cerrar();
   const sel = new Set((negocio && negocio.actividades) || []), primera = !negocio;
@@ -64,6 +94,9 @@ function asistente(tabInicial) {
     <input type="text" id="bn-nombre" maxlength="60" autocomplete="organization" placeholder="Ej. Vita Aura" value="${esc((negocio && negocio.nombre) || nombreInicial())}">
     <label class="bn-l" for="bn-tel">Teléfono o WhatsApp (se muestra en la página de reservas)</label>
     <input type="tel" id="bn-tel" maxlength="30" autocomplete="tel" placeholder="Ej. 261 555 0000" value="${esc((negocio && negocio.telefono) || '')}">
+    <label class="bn-l" for="bn-logo">Logo del centro (PNG o SVG, opcional)</label>
+    <div class="bn-logo-fila"><div class="bn-logo-prev" id="bn-logo-prev">${negocio && negocio.logo ? `<img src="${esc(negocio.logo)}" alt="Logo actual">` : '<span>Sin logo</span>'}</div>
+    <div style="display:grid;gap:6px"><input type="file" id="bn-logo" accept="image/png,image/svg+xml,.png,.svg"><button type="button" class="bn-btn sec" id="bn-logo-quitar"${negocio && negocio.logo ? '' : ' hidden'}>Quitar logo</button><small style="color:var(--text-muted,#a8a396)">Se muestra en el menú del Hub. Ideal: fondo transparente.</small></div></div>
     <div class="bn-tabs" role="tablist"><button type="button" role="tab" class="bn-tab" id="bn-tab-a" aria-selected="true" aria-controls="bn-pan-a">Actividades</button><button type="button" role="tab" class="bn-tab" id="bn-tab-s" aria-selected="false" aria-controls="bn-pan-s">Salones${((negocio && negocio.salones) || []).length ? ' (' + negocio.salones.length + ')' : ''}</button></div>
     <div id="bn-pan-a" role="tabpanel" aria-labelledby="bn-tab-a">
     <label class="bn-l">¿Qué actividades realizan? Elija todas las que correspondan.</label>
@@ -94,6 +127,14 @@ function asistente(tabInicial) {
   $('bn-sal-mas').onclick = () => { $('bn-nsal').value = Math.min(20, (Number($('bn-nsal').value) || 0) + 1); camposSal(); };
   camposSal();
   if (tabInicial === 's') verTab('s');
+  let logoNuevo = (negocio && negocio.logo) || '';
+  const prevLogo = () => { $('bn-logo-prev').innerHTML = logoNuevo ? `<img src="${esc(logoNuevo)}" alt="Logo">` : '<span>Sin logo</span>'; $('bn-logo-quitar').hidden = !logoNuevo; };
+  $('bn-logo-quitar').onclick = () => { logoNuevo = ''; $('bn-logo').value = ''; prevLogo(); };
+  $('bn-logo').onchange = async () => {
+    const file = $('bn-logo').files[0]; $('bn-err').textContent = ''; if (!file) return;
+    try { logoNuevo = await prepararLogo(file); prevLogo(); }
+    catch (e) { $('bn-logo').value = ''; $('bn-err').textContent = e.message || 'No se pudo leer el logo.'; }
+  };
   f.addEventListener('click', (e) => { if (e.target === f) cerrar(); });
   $('bn-form').onsubmit = async (ev) => {
     ev.preventDefault();
@@ -108,11 +149,11 @@ function asistente(tabInicial) {
     if (repetido) { verTab('s'); return err(`Hay dos salones con el nombre «${repetido}». Póngales nombres distintos (por ejemplo, Aeróbica 1 y Aeróbica 2).`); }
     $('bn-ok').disabled = true; $('bn-ok').textContent = 'Guardando…';
     try {
-      const datos = { nombre: nom, telefono: tel, actividades: acts, salones, salones_off, version_catalogo: (window.DOMINO_CATALOGO || {}).version || 1, actualizado: serverTimestamp() };
+      const datos = { nombre: nom, telefono: tel, actividades: acts, salones, salones_off, logo: logoNuevo || '', version_catalogo: (window.DOMINO_CATALOGO || {}).version || 1, actualizado: serverTimestamp() };
       if (!negocio) datos.creado = serverTimestamp();
       await setDoc(doc(D().db, 'config', 'negocio'), datos, { merge: true });
       negocio = Object.assign({}, negocio, datos); window.DOMINO_NEGOCIO = negocio;
-      cerrar(); pintarPanel(true);
+      cerrar(); pintarPanel(true); aplicarLogo(); if (nom) document.querySelectorAll('.brand-name b').forEach((el) => { el.textContent = nom; });
     } catch (e) { console.error(e); $('bn-ok').disabled = false; $('bn-ok').textContent = 'Guardar'; err('No se pudo guardar. Revise su conexión e intente de nuevo.'); }
   };
   f.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrar(); });
@@ -144,6 +185,7 @@ async function iniciar() {
   if (cargado && !negocio && D().rol === 'senior' && !window.__bnOfrecido) { window.__bnOfrecido = true; asistente(); }
   const t = (negocio && negocio.nombre) ? negocio.nombre : null;
   if (t && window.DOMINO_CLIENTE) { document.querySelectorAll('.brand-name b').forEach((el) => { el.textContent = t; }); }
+  aplicarLogo();
 }
 window.addEventListener('domino:listo', iniciar);
 window.addEventListener('domino:vista', (e) => { if (e.detail === 'hub') pintarPanel(false); });

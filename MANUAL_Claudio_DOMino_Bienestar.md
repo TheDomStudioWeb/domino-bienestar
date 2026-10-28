@@ -3,7 +3,7 @@
 **Qué es:** app para centros de bienestar: gimnasios, clases grupales, yoga y pilates, spa y masajes, peluquería, barbería, uñas, estética y consultorios de nutrición o kinesiología. Es una copia propia de cada centro, con su base de datos y su planilla de turnos; no comparte nada con otros centros. **Siempre se habla de «socios»** (nunca clientes, pacientes ni dueños). Trato: voseo con el equipo de The DOM Studio Web; «usted» con el equipo del centro.
 
 ## Primer ingreso (Dirección)
-Al entrar por primera vez, la Dirección carga el **nombre del centro, un teléfono, las actividades y los salones**. Puede cambiarlos después desde los botones «Actividades» y «Salones» del inicio. Si toca «Más tarde», el asistente vuelve a aparecer en el próximo ingreso. Solo la Dirección puede cargar o cambiar esto.
+Al entrar por primera vez, la Dirección carga el **nombre del centro, un teléfono, el logo (PNG o SVG, opcional), las actividades y los salones**. El logo se ve en el menú del Hub. Puede cambiarlos después desde los botones «Actividades» y «Salones» del inicio. Si toca «Más tarde», el asistente vuelve a aparecer en el próximo ingreso. Solo la Dirección puede cargar o cambiar esto.
 
 ## Roles
 Dirección (todo) · Profesor/a o profesional (ve su propia agenda) · Recepción (ve y gestiona todos los turnos).
