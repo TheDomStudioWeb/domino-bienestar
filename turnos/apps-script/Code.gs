@@ -87,7 +87,7 @@ function falla_(codigo) { const e = new Error(codigo); e.codigo = codigo; return
 
 function despachar_(p) {
   const a = String(p.accion || '');
-  const PUB = { inicio: inicio_, config_publica: configPublica_, horarios_libres: horariosLibres_, reservar: reservar_, ver_turno: verTurno_, cancelar_turno: cancelarTurno_ };
+  const PUB = { inicio: inicio_, clases_dias: clasesDias_, config_publica: configPublica_, horarios_libres: horariosLibres_, reservar: reservar_, ver_turno: verTurno_, cancelar_turno: cancelarTurno_ };
   if (PUB[a]) return PUB[a](p);
   if (a === 'login') return login_(p.email, p.clave);
   const u = validarToken_(p.token);
@@ -122,6 +122,30 @@ function inicio_() {
   cfg.servicios.forEach(sv => { h[sv.id] = horariosLibres_({ servicio_id: sv.id, desde: desde, dias: dias }).dias; });
   cfg.horarios = h; cfg.generado = Date.now();
   return cfg;
+}
+
+
+// Clases con cupo de hoy y los próximos días, con lugares libres (para el Hub de Bienestar). Solo cuenta lugares: no devuelve datos de personas.
+function clasesDias_(p) {
+  const c = config_(), dias = Math.min(Math.max(Number(p.dias) || 4, 1), 14), hoy = deMin_(ahoraMin_()).fecha, ahora = ahoraMin_();
+  const ocupados = mapaOcupados_(), horarios = leerHoja_(HOJAS.horarios), bloqueos = leerHoja_(HOJAS.bloqueos);
+  const recs = {}; activos_(HOJAS.recursos).forEach(r => { recs[String(r.id)] = r.nombre; });
+  const out = [];
+  activos_(HOJAS.servicios).filter(s => cupoDe_(s) > 1).forEach(serv => {
+    const cupo = cupoDe_(serv), dur = Number(serv.duracion_min);
+    lista_(serv.recursos).forEach(rid => {
+      for (let i = 0; i < dias; i++) {
+        const f = deMin_(aMin_(hoy, '00:00') + i * 1440).fecha, dow = diaSemana_(f);
+        horarios.filter(h => String(h.recurso_id) === rid && Number(h.dia_semana) === dow).forEach(h => {
+          const ini = aMin_(f, h.desde); if (ini + dur > aMin_(f, h.hasta)) return;
+          let usados = 0; for (let t = ini; t < ini + dur; t += c.paso_min) usados = Math.max(usados, ocupados[claveSlot_(rid, t)] || 0);
+          out.push({ fecha: f, hora: deMin_(ini).hora, servicio_id: String(serv.id), clase: serv.nombre, sala: recs[rid] || '', cupo: cupo, libres: Math.max(cupo - usados, 0), suspendida: enBloqueo_(bloqueos, rid, ini, ini + dur), pasada: ini + dur <= ahora });
+        });
+      }
+    });
+  });
+  out.sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora));
+  return { ok: true, clases: out };
 }
 
 // ── Tiempo (todo en minutos "de pared", sin depender de la zona del servidor) ──

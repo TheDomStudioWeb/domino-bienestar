@@ -19,8 +19,18 @@ Dirección (todo) · Profesor/a o profesional (ve su propia agenda) · Recepció
 2. En Apps Script ejecutar `cargarActividades`. Se crean salas, clases con cupo, servicios y horarios típicos. Se puede repetir sin duplicar.
 3. Ajustar en la planilla los horarios, cupos, duraciones, nombres y profesionales (hoja `recursos`, columna `usuario_email`). La app todavía no maneja precios.
 
+## Pantalla de inicio (Hub)
+- Arriba, cuatro tarjetas: **Cuotas por vencer** (vencidas o que vencen en 7 días), **Aptos médicos por vencer** (vencidos o en 15 días), **Avisos de hoy** (seguimientos vencidos o de hoy) y **Clases que quedan hoy**. Las de cuotas y aptos abren la lista de socios con un botón «Ver ficha».
+- **Clases de hoy y los próximos días**: cada clase con su hora, sala y cuántos lugares quedan («8 de 15»). En amarillo si quedan pocos, en rojo si está completa o suspendida. Se necesita la agenda de turnos conectada.
+- Debajo, los **Seguimientos** de hoy y los próximos días.
+- Los seguimientos tienen estados con nombres de gimnasio: Por hacer, En revisión, Esperando respuesta, En gestión, Avisado y Resuelto.
+
+## Cuota y apto médico de cada socio
+- Se cargan al registrar al socio (opcional) o en su ficha, en el bloque **Cuota y apto médico**: fecha de vencimiento de la cuota y del apto. La ficha muestra si está al día, por vencer o vencido.
+- Todavía no hay planes ni cobros: solo la fecha de vencimiento, para avisar a tiempo.
+
 ## Lo que todavía no está
-Cuotas y planes de socios con vencimiento, asistencia a clases, lista de espera, página pública del negocio y gestión de documentos (figura como «Próximamente»). No prometer nada de eso como disponible.
+Planes y cobro de cuotas (por ahora solo se carga la fecha de vencimiento), asistencia a clases, lista de espera, página pública del negocio y gestión de documentos (figura como «Próximamente»). No prometer nada de eso como disponible.
 
 ## Preguntas frecuentes
 - *¿Cuántas personas entran a una clase?* Lo define el cupo de cada clase en la planilla (columna `cupo`).

@@ -132,6 +132,7 @@ async function renderHub() {
 }
 
 function renderResumen(r) {
+  if (window.BIENESTAR_RESUMEN) return window.BIENESTAR_RESUMEN(r);
   const rol = D().rol;
   const items = [
     { n: r.vencidas, t: 'Vencidas', cls: 'text-rojo', go: "verVencidas()" },
@@ -144,6 +145,7 @@ function renderResumen(r) {
 }
 
 function renderHoy(lista, hoy) {
+  if (window.BIENESTAR_HOY && !renderHoy.base) return window.BIENESTAR_HOY(lista, hoy, (l, h) => { renderHoy.base = true; try { renderHoy(l, h); } finally { renderHoy.base = false; } });
   const cont = $('hub-lista-hoy');
   if (!lista.length) { cont.innerHTML = '<p class="vacio">No hay vencimientos para hoy ni para los próximos días.</p>'; return; }
   const cache = (window.DOMINO && window.DOMINO.clientes) || {};
@@ -275,7 +277,7 @@ function pintarDia() {
     const act = D().rol === 'asistente'
       ? `data-act="docs-tarea" data-id="${esc(t.id)}" data-titulo="${esc(t.titulo)}" data-cliente="${esc(t.cliente_id)}"`
       : `data-act="expediente" data-id="${esc(t.cliente_id)}" data-nombre="${esc(cache[t.cliente_id] || T('empresa', 'Empresa'))}"`;
-    return `<div class="task-item ${fin ? 'border-verde' : 'border-ambar'}"><div class="task-info"><h4>${esc(t.titulo)}</h4><p style="color:var(--text-muted);font-size:.85rem;"><strong>${esc(cache[t.cliente_id] || 'Empresa')}</strong> | ${esc(t.responsable)} | Estado: ${esc(t.estado)}</p></div><button class="btn-action" ${act}>${D().rol === 'asistente' ? 'Documentos' : T('ver_ficha', 'Ver expediente')}</button></div>`;
+    return `<div class="task-item ${fin ? 'border-verde' : 'border-ambar'}"><div class="task-info"><h4>${esc(t.titulo)}</h4><p style="color:var(--text-muted);font-size:.85rem;"><strong>${esc(cache[t.cliente_id] || T('empresa', 'Empresa'))}</strong> | ${esc(t.responsable)} | Estado: ${esc(window.TXT_ESTADO ? window.TXT_ESTADO(t.estado) : t.estado)}</p></div><button class="btn-action" ${act}>${D().rol === 'asistente' ? 'Documentos' : T('ver_ficha', 'Ver expediente')}</button></div>`;
   }).join('') : '<p class="vacio">No hay vencimientos este día.</p>';
 }
 $('cal-grid').addEventListener('click', (e) => { const b = e.target.closest('[data-f]'); if (!b) return; calSel = b.dataset.f; pintarCalendario(); });

@@ -193,7 +193,8 @@ formAlta.addEventListener('submit', async (e) => {
             cuit: cuit,
             estado: "activo",
             fecha_creacion: new Date().toISOString(),
-            usuario_id: document.getElementById('client-usuario-id').value.trim().toLowerCase()
+            usuario_id: document.getElementById('client-usuario-id').value.trim().toLowerCase(),
+            ...(window.datosExtraAlta ? window.datosExtraAlta() : {})
         });
 
         formAlta.reset(); // Limpiamos los campos
@@ -329,7 +330,7 @@ async function cargarTareasDelCliente(id) {
                     <div class="task-info">
                         <h4>${esc(tarea.titulo)}</h4>
                         <p style="color: var(--text-muted); font-size: 0.85rem;">
-                            Asignado a: <strong>${esc(tarea.responsable)}</strong> | Vence: ${esc(tarea.vencimiento)} | Estado: ${esc(tarea.estado)}
+                            Asignado a: <strong>${esc(tarea.responsable)}</strong> | Vence: ${esc(tarea.vencimiento)} | Estado: ${esc(window.TXT_ESTADO ? window.TXT_ESTADO(tarea.estado) : tarea.estado)}
                         </p>
                     </div>
                     <div style="display: flex; gap: 8px;">
@@ -337,7 +338,7 @@ async function cargarTareasDelCliente(id) {
         Documentos
     </button>
     <button class="btn-secundario" data-act="estado" data-id="${esc(idTarea)}" data-estado="${esc(tarea.estado)}" data-titulo="${esc(tarea.titulo)}">
-        ${esc(tarea.estado)}
+        ${esc(window.TXT_ESTADO ? window.TXT_ESTADO(tarea.estado) : tarea.estado)}
     </button>
 </div>
                 </div>
@@ -581,7 +582,7 @@ window.abrirModalEstado = function(id, estadoActual, tituloTarea) {
     siguientes.forEach(estado => {
         const btn = document.createElement('button');
         btn.className = 'btn-secundario';
-        btn.innerText = estado;
+        btn.innerText = window.TXT_ESTADO ? window.TXT_ESTADO(estado) : estado;
         btn.addEventListener('click', () => seleccionarEstado(estado));
         opcionesEstado.appendChild(btn);
     });
@@ -809,7 +810,7 @@ window.cargarPrioridades = async function() {
         querySnapshot.forEach((taskDoc) => {
             const tarea = taskDoc.data();
             if (tarea.estado === "Proceso Completo/Finalizado") return;
-            const nombreEmpresa = cacheClientes[tarea.cliente_id] || "Empresa desconocida";
+            const nombreEmpresa = cacheClientes[tarea.cliente_id] || (window.DOMINO_T ? window.DOMINO_T("desconocido", "Empresa desconocida") : "Empresa desconocida");
             
             listaPrioridades.innerHTML += `
                 <div class="task-item ${colorEstado[tarea.estado] || 'border-ambar'}">
@@ -818,7 +819,7 @@ window.cargarPrioridades = async function() {
                         <p style="color: var(--text-muted); font-size: 0.85rem;">
                             <strong>${esc(nombreEmpresa)}</strong> | 
                             Área: ${esc(tarea.responsable)} | 
-                            Vence: ${esc(tarea.vencimiento)} | Estado: ${esc(tarea.estado)}
+                            Vence: ${esc(tarea.vencimiento)} | Estado: ${esc(window.TXT_ESTADO ? window.TXT_ESTADO(tarea.estado) : tarea.estado)}
                         </p>
                     </div>
                     <button class="btn-action" data-act="expediente" data-id="${esc(tarea.cliente_id)}" data-nombre="${esc(nombreEmpresa)}">
@@ -933,7 +934,7 @@ async function cargarKanban() {
             const columna = columnas[tarea.estado];
             if (!columna || !pasaFiltro(tarea)) return;
             
-            const nombreEmpresa = cacheClientes[tarea.cliente_id] || "Empresa desconocida";
+            const nombreEmpresa = cacheClientes[tarea.cliente_id] || (window.DOMINO_T ? window.DOMINO_T("desconocido", "Empresa desconocida") : "Empresa desconocida");
             
             columna.innerHTML += `
                 <div class="kanban-card" data-act="expediente" data-id="${esc(tarea.cliente_id)}" data-nombre="${esc(nombreEmpresa)}" role="button" tabindex="0">
@@ -1046,7 +1047,7 @@ async function cargarMisTareas(nombreAsistente) {
             const columna = columnas[tarea.estado];
             if (!columna || !pasaFiltro(tarea)) return;
             
-            const nombreEmpresa = cacheClientes[tarea.cliente_id] || "Empresa desconocida";
+            const nombreEmpresa = cacheClientes[tarea.cliente_id] || (window.DOMINO_T ? window.DOMINO_T("desconocido", "Empresa desconocida") : "Empresa desconocida");
             
             columna.innerHTML += `
     <div class="kanban-card" data-act="docs-tarea" data-id="${esc(taskDoc.id)}" data-titulo="${esc(tarea.titulo)}" data-cliente="${esc(tarea.cliente_id)}" role="button" tabindex="0">

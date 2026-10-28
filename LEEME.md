@@ -21,6 +21,6 @@ Ver `GUIA_Alta_de_cliente_nuevo.md` (rubro `bienestar`). `node alta/preparar-cli
 `cd turnos/test && node run.js && node run_clases.js` (motor de turnos, clases con cupo y carga de actividades). `node alta/sincronizar-catalogo.js --verificar` comprueba que el catálogo está sincronizado.
 
 ## Pendiente (próxima etapa)
-- Cuotas y planes de socios con vencimiento; asistencia a clases; lista de espera.
+- Planes y cobro de cuotas (hoy solo fechas de vencimiento de cuota y apto médico); asistencia a clases; lista de espera.
 - Página pública del negocio (FrontEnd) y widget con los turnos del día.
 - Manual PDF y manual MD para Claudio.
