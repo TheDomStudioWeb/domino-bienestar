@@ -323,9 +323,10 @@ async function adminClases() {
 function loginAgenda(msg) {
   const f = cajaClases(`<form id="bn-lg" novalidate><h2 id="bn-t">Ingresar a la agenda</h2><p>Para cambiar clases, entre con el correo y la clave de la <b>Agenda de turnos</b>. Queda guardado en este dispositivo.</p>
     <label class="bn-l" for="bn-lg-e">Correo</label><input type="text" id="bn-lg-e" inputmode="email" autocomplete="username" value="${esc((D().auth && D().auth.currentUser && D().auth.currentUser.email) || '')}">
-    <label class="bn-l" for="bn-lg-c">Clave</label><input type="password" id="bn-lg-c" autocomplete="current-password">
+    <label class="bn-l" for="bn-lg-c">Clave</label><div style="display:flex;gap:8px"><input type="password" id="bn-lg-c" autocomplete="current-password" style="flex:1"><button type="button" class="bn-btn sec" id="bn-lg-ver" aria-label="Mostrar la clave" aria-pressed="false" style="padding:0 14px">👁</button></div>
     <div class="bn-err" id="bn-lg-err" role="alert">${esc(msg || '')}</div><div class="bn-fila"><button type="submit" class="bn-btn" id="bn-lg-ok">Ingresar</button></div></form>`);
   $('bn-lg-e').focus();
+  $('bn-lg-ver').onclick = () => { const i = $('bn-lg-c'), ver = i.type === 'password'; i.type = ver ? 'text' : 'password'; $('bn-lg-ver').setAttribute('aria-pressed', String(ver)); $('bn-lg-ver').setAttribute('aria-label', ver ? 'Ocultar la clave' : 'Mostrar la clave'); i.focus(); };
   $('bn-lg').onsubmit = async (ev) => {
     ev.preventDefault(); const b = $('bn-lg-ok'); b.disabled = true; b.textContent = 'Ingresando…';
     const r = await llamar('login', { email: $('bn-lg-e').value.trim(), clave: $('bn-lg-c').value });

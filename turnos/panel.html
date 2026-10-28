@@ -100,7 +100,8 @@ const gestion = () => ['Senior', 'Mid Senior'].includes(S.user && S.user.rol);
 // ── Entrada ──
 function pLogin(e) {
   $('#tabs').hidden = true; $('#salir').hidden = true; $('#who').textContent = '';
-  M.innerHTML = `<h2>Ingresar</h2><form id="f" novalidate>${e ? err(e) : ''}<label for="em">Correo</label><input id="em" type="email" autocomplete="username" inputmode="email"><label for="cl">Clave</label><input id="cl" type="password" autocomplete="current-password"><button class="btn" id="go">Ingresar</button></form>`;
+  M.innerHTML = `<h2>Ingresar</h2><form id="f" novalidate>${e ? err(e) : ''}<label for="em">Correo</label><input id="em" type="email" autocomplete="username" inputmode="email"><label for="cl">Clave</label><div style="display:flex;gap:8px"><input id="cl" type="password" autocomplete="current-password" style="flex:1"><button type="button" class="btn" id="ver" aria-label="Mostrar la clave" aria-pressed="false" style="width:auto;padding:0 16px">👁</button></div><button class="btn" id="go">Ingresar</button></form>`;
+  $('#ver').onclick = () => { const i = $('#cl'), v = i.type === 'password'; i.type = v ? 'text' : 'password'; $('#ver').setAttribute('aria-pressed', String(v)); $('#ver').setAttribute('aria-label', v ? 'Ocultar la clave' : 'Mostrar la clave'); i.focus(); };
   $('#f').onsubmit = async ev => { ev.preventDefault(); $('#go').disabled = true; $('#go').textContent = 'Ingresando…'; const r = await llamar('login', { email: $('#em').value, clave: $('#cl').value }); if (!r.ok) return pLogin(r.error); S.tok = r.token; S.user = r.usuario; guardarSes(); S.ag = null; pintar(); };
 }
 $('#salir').onclick = () => { S.tok = null; S.user = null; S.ag = null; S.tab = 'agenda'; S.det = null; S.nu = {}; S.rec = ''; S.fecha = hoyL(); guardarSes(); pintar(); };
