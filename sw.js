@@ -1,4 +1,4 @@
-const CACHE_NAME = 'bienestar-v1';
+const CACHE_NAME = 'bienestar-v2';
 const urlsToCache = [
     './',
     'index.html',
