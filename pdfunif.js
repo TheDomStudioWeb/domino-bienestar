@@ -6,7 +6,7 @@
 const $ = (id) => document.getElementById(id);
 const aviso = (t) => { if (window.DOMINO && window.DOMINO.aviso) window.DOMINO.aviso(t); else console.log(t); };
 
-const LIBS = { pdflib: 'libs/pdf-lib.min.js', mammoth: 'libs/mammoth.browser.min.js', xlsx: 'libs/xlsx.mini.min.js' };
+const LIBS = { pdflib: 'libs/pdf-lib.min.js', mammoth: 'libs/mammoth.browser.min.js', xlsx: 'libs/xlsx.core.min.js' };
 const cargadas = {};
 function cargarLib(k) {
   if (!cargadas[k]) {
@@ -323,6 +323,7 @@ async function generar() {
     const F = { reg: await out.embedFont(StandardFonts.Helvetica), neg: await out.embedFont(StandardFonts.HelveticaBold), curs: await out.embedFont(StandardFonts.HelveticaOblique), negCurs: await out.embedFont(StandardFonts.HelveticaBoldOblique) };
     const avisos = [];
     for (const it of items) {
+     try {
       if (it.tipo === 'pdf') {
         const src = await PDFDocument.load(await it.blob.arrayBuffer(), { ignoreEncryption: true });
         (await out.copyPages(src, src.getPageIndices())).forEach((p) => out.addPage(p));
@@ -338,6 +339,7 @@ async function generar() {
         const rec = await agregarExcel(out, it, F);
         avisos.push(`<b>${esc(it.nombre)}</b>: cada hoja quedó como una tabla (sin fórmulas ni gráficos).${rec ? ` Se tomaron las primeras ${MAX_FILAS} filas de alguna hoja.` : ''}`);
       }
+     } catch (e) { throw new Error(`«${it.nombre}»: ${e.message || 'no se pudo convertir'}`); }
     }
     const nombre = ($('pdf-nombre').value || 'Documento unificado').trim().replace(/[\\/:*?"<>|]+/g, ' ').slice(0, 80);
     out.setTitle(nombre); out.setProducer('DOMino Bienestar · The DOM Studio Web');
@@ -348,7 +350,7 @@ async function generar() {
     nota.innerHTML = avisos.join('<br>');
     $('pdf-resultado').hidden = false; $('pdf-resultado').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } catch (err) {
-    console.error(err); aviso('No se pudo armar el PDF: ' + (err.message || err));
+    console.error(err); $('pdf-resultado').hidden = true; aviso('No se pudo armar el PDF: ' + (err.message || err));
     nota.innerHTML = '<span class="mal-txt">No se pudo armar el PDF. ' + esc(err.message || '') + '</span>';
   } finally { btn.disabled = false; btn.textContent = txt0; }
 }
