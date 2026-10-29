@@ -225,7 +225,9 @@ async function agregarWord(out, it, F) {
       const bytes = Uint8Array.from(atob(m[2]), (c) => c.charCodeAt(0));
       const pi = /png/i.test(m[1]) ? await out.embedPng(bytes) : await out.embedJpg(bytes);
       const maxH = w.W.pagina[1] - w.W.margen * 2;
-      const d = pi.scaleToFit(maxW, maxH); w.asegura(d.height + 6);
+      // Nunca se agranda más que su tamaño natural (96 ppp): un logo chico no se estira al ancho de la hoja.
+      const nat = 0.75, k = Math.min(1, maxW / (pi.width * nat), maxH / (pi.height * nat));
+      const d = { width: pi.width * nat * k, height: pi.height * nat * k }; w.asegura(d.height + 6);
       e.pg.drawImage(pi, { x: x0, y: e.y - d.height, width: d.width, height: d.height }); e.y -= d.height + 8;
     } catch (_) { /* imagen no soportada: se omite */ }
   };
