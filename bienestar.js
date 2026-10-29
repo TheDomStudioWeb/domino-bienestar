@@ -239,7 +239,7 @@ const hoyStr = () => { const d = new Date(); return `${d.getFullYear()}-${String
 const diasHasta = (s) => Math.round((new Date(s + 'T12:00:00') - new Date(hoyStr() + 'T12:00:00')) / 86400000);
 const dmy = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '') ? s.split('-').reverse().join('/') : '';
 const fechaLarga = (s) => { const t = new Date(s + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }); return t.charAt(0).toUpperCase() + t.slice(1); };
-let socios = null, clases = null, clasesErr = '', puestosHoy = [];
+let socios = null, clases = null, clasesErr = '', puestosHoy = [], pendientes = null;
 
 function estilosHub() {
   if ($('bn-css-hub')) return;
@@ -315,6 +315,7 @@ function pintarResumen(r) {
   const rol = D().rol, cuotas = porVencer('cuota_vence', AVISO_CUOTA_DIAS).length, aptos = porVencer('apto_vence', AVISO_APTO_DIAS).length;
   const deHoy = (clases || []).filter((c) => c.fecha === hoyStr() && !c.pasada && !c.suspendida).length;
   const items = [
+    ...(pendientes ? [{ n: pendientes.length, t: pendientes.length === 1 ? 'Turno por confirmar' : 'Turnos por confirmar', cls: pendientes.length ? 'text-ambar' : 'text-verde', go: 'bnVerTurnos()' }] : []),
     { n: socios ? cuotas : '–', t: 'Cuotas por vencer', cls: cuotas ? 'text-rojo' : 'text-verde', go: 'bnVerCuotas()' },
     { n: socios ? aptos : '–', t: 'Aptos médicos por vencer', cls: aptos ? 'text-ambar' : 'text-verde', go: 'bnVerAptos()' },
     { n: (r.vencidas || 0) + (r.hoy || 0), t: 'Avisos de hoy', cls: (r.vencidas || r.hoy) ? 'text-ambar' : 'text-verde', go: r.vencidas ? 'verVencidas()' : `navegarA('${rol === 'asistente' ? 'mis-tareas' : 'kanban'}')` },
@@ -356,10 +357,19 @@ window.BIENESTAR_HOY = (lista, hoy, base) => {
   if (cont) cont.innerHTML = lista.length ? '<h3 class="bn-sub">Seguimientos</h3>' + cont.innerHTML : '';
   pintarClases();
 };
+// Solicitudes de turno que esperan confirmación (reservas hechas por los clientes en modo «solicitud»). Solo las ve el personal con agenda.
+async function leerPendientes() {
+  if (!window.TURNOS_API || !D() || !['senior', 'midsenior', 'asistente'].includes(D().rol)) { pendientes = null; return; }
+  await new Promise((ok) => setTimeout(ok, 0)); // si el Hub ya estaba listo al cargar este archivo, deja terminar de definir las funciones de la agenda
+  const f = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`, hoy = hoyStr(), lim = new Date(); lim.setDate(lim.getDate() + 120);
+  try { const r = await apiAgenda('agenda', { desde: hoy, hasta: f(lim) }); pendientes = r && r.ok ? (r.turnos || []).filter((t) => t.estado === 'Por confirmar' && t.fecha >= hoy) : null; }
+  catch (e) { pendientes = null; }
+}
+window.bnVerTurnos = () => window.open('turnos/panel.html', '_blank', 'noopener');
 async function refrescarHubBienestar() {
   if (!activo() || !D() || !D().listo) return;
   pintarClases();
-  await Promise.all([leerSocios(), leerClases()]);
+  await Promise.all([leerSocios(), leerClases(), leerPendientes()]);
   if (ultimoResumen) pintarResumen(ultimoResumen);
   pintarClases();
 }
