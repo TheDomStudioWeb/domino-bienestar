@@ -71,7 +71,7 @@ function dibujarLista() {
   $('pdf-lista').innerHTML = items.map((it, i) => `
     <div class="pdf-it" data-i="${i}">
       ${it.tipo === 'img' ? `<div class="pdf-th" style="background-image:url(${it.url});transform:rotate(${it.giro}deg)"></div>` : `<div class="pdf-th pdf-th-t">${ETQ[it.tipo]}</div>`}
-      <div class="pdf-nm"><b>${esc(it.nombre)}</b><small>${it.tipo === 'pdf' ? `${it.paginas} ${it.paginas === 1 ? 'página' : 'páginas'}` : it.tipo === 'img' ? 'Una página' : 'Se convierte al unir'}</small></div>
+      <div class="pdf-nm"><b>${esc(it.nombre)}</b><small>${it.tipo === 'pdf' ? `${it.paginas} ${it.paginas === 1 ? 'página' : 'páginas'}` : it.tipo === 'img' ? 'Una página' : 'Se convierte al unir. Si el formato es importante, subilo ya como PDF.'}</small></div>
       <div class="pdf-ac">
         ${it.tipo === 'img' ? `<button type="button" data-a="giro" aria-label="Girar">⟳</button>` : ''}
         <button type="button" data-a="up" aria-label="Subir" ${i === 0 ? 'disabled' : ''}>▲</button>
