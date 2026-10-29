@@ -544,12 +544,14 @@
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').catch(function () {});
     }
-    // Aviso de versión nueva: compara la huella de app.js al abrir con la del servidor cada vez que se vuelve a la app (máx. cada 5 min).
+    // Aviso de versión nueva: compara la huella de los archivos de la app con la del servidor cada vez que se vuelve a la app (máx. cada 5 min).
     (function () {
+        var ARCH = ['index.html', 'app.js', 'hub.js', 'pdfunif.js', 'bienestar.js', 'estudio.js', 'modulos.js'];
         var base = null, ultimo = 0, avisado = false;
-        function huella() {
-            return fetch('app.js', { method: 'HEAD', cache: 'no-store' }).then(function (r) { return r.ok ? (r.headers.get('etag') || r.headers.get('last-modified') || '') : ''; }).catch(function () { return ''; });
+        function una(a) {
+            return fetch(a, { method: 'HEAD', cache: 'no-store' }).then(function (r) { return r.ok ? (r.headers.get('etag') || r.headers.get('last-modified') || '') : ''; }).catch(function () { return ''; });
         }
+        function huella() { return Promise.all(ARCH.map(una)).then(function (v) { return v.some(Boolean) ? v.join('|') : ''; }); }
         function aviso() {
             if (avisado) return; avisado = true;
             var d = document.createElement('div'); d.setAttribute('role', 'status');
