@@ -40,6 +40,18 @@ Dirección (todo) · Profesor/a o profesional (ve su propia agenda) · Recepció
 - Dos clases no pueden darse a la vez en la misma sala. Si una clase nueva coincide en día y horario con otra, la app pide indicar la sala; si es la misma sala, no deja guardar (por ejemplo, un gimnasio con un solo salón).
 - Los cambios se ven enseguida en la agenda, en la página de reservas y en «Clases de hoy».
 
+## Equipo y puestos de atención (peluquería, barbería, uñas, spa, estética, consultorio)
+- En estos rubros se atiende por turno individual en un **puesto**: silla (peluquería, barbería), camilla (spa, estética), puesto (uñas), consultorio.
+- Desde el Hub, botón **Equipo y puestos** (solo la Dirección): se carga cuántos puestos tiene el centro (por ejemplo, 3 sillas) y los nombres de quienes atienden (Ana, Luis, Marta).
+- Si se deja vacía la cantidad de puestos, no hay límite: atienden a la vez tantas personas como profesionales haya.
+- **Los turnos nunca superan los puestos.** Con 3 profesionales y 2 sillas, a la misma hora entran como máximo 2 clientes; el tercero ve ese horario como no disponible.
+- Quien reserva puede **elegir con quién** atenderse o dejar «Cualquiera disponible» (opción por defecto): en ese caso se asigna a quien esté libre a esa hora y tenga menos turnos ese día. Al confirmar, la página le dice con quién quedó.
+- Cada profesional usa los mismos servicios y horarios de la actividad; sus horarios se ajustan en la planilla (hoja «horarios»).
+- Si alguien deja el equipo, se lo saca de la lista: queda inactivo y no se pierde su historial. Si vuelve, se lo suma de nuevo con el mismo nombre.
+- La Dirección puede cargar un turno a mano aunque no haya puesto libre (por ejemplo, un cliente que llega sin turno); la agenda interna lo permite a propósito.
+- En el inicio del Hub, la tarjeta **Puestos de atención ahora** muestra, por actividad, cuántos puestos están libres en este momento (ejemplo: «2 de 3 sillas libres»).
+- La barbería es una actividad aparte de la peluquería, con sus propios puestos y su propio equipo.
+
 ## Cuota y apto médico de cada socio
 - Se cargan al registrar al socio (opcional) o en su ficha, en el bloque **Cuota y apto médico**: fecha de vencimiento de la cuota y del apto. La ficha muestra si está al día, por vencer o vencido.
 - Todavía no hay planes ni cobros: solo la fecha de vencimiento, para avisar a tiempo.

@@ -125,8 +125,44 @@ function sincronizarActividades_(p, u) {
   const nom = limpiar_(p.nombre, 80), tel = limpiar_(p.telefono, 40);
   if (nom.length >= 2) poner('nombre', valorCelda_('nombre', nom));
   if (tel) poner('telefono', valorCelda_('telefono', tel));
+  const puestos = p.puestos && typeof p.puestos === 'object' ? p.puestos : {};
+  ids.forEach(id => { const a = CATALOGO_.actividades.find(x => x.id === id); if (!a || !a.puesto) return; const n = Math.floor(Number(puestos[id])); poner('puestos_' + id, n > 0 ? Math.min(n, 100) : ''); });
   invalidarHoja_(HOJAS.config);
-  return { ok: true, nuevos: cargarActividades() };
+  const nuevos = cargarActividades();
+  const equipo = p.equipo && typeof p.equipo === 'object' ? p.equipo : {};
+  ids.forEach(id => { const a = CATALOGO_.actividades.find(x => x.id === id); if (a && a.recurso && a.puesto && Array.isArray(equipo[id])) aplicarEquipo_(id, a, equipo[id]); });
+  return { ok: true, nuevos: nuevos };
+}
+
+// Equipo de una actividad con turnos individuales: cada profesional es un «recurso» con los mismos servicios y horarios de la actividad.
+// El primero usa el recurso de siempre (R_<actividad>); los demás R_<actividad>_p2, _p3… Quien se saca queda inactivo (no se borra su historial).
+function aplicarEquipo_(id, a, nombres) {
+  const lista = []; nombres.forEach(n => { const t = limpiar_(n, 40); if (t.length >= 2 && !lista.some(x => x.toLowerCase() === t.toLowerCase())) lista.push(t); });
+  if (!lista.length) return;
+  const lock = LockService.getScriptLock(); if (!lock.tryLock(20000)) throw falla_('sistema_ocupado');
+  try {
+    const base = 'R_' + id, generico = String((a.recurso && a.recurso.nombre) || '').toLowerCase();
+    const shR = obtenerHoja_(HOJAS.recursos), hR = asegurarColumnas_(shR, COL_RECURSOS);
+    const todos = leerHojaDirecto_(HOJAS.recursos), propios = todos.filter(r => String(r.id) === base || String(r.id).indexOf(base + '_p') === 0);
+    const horarios = leerHojaDirecto_(HOJAS.horarios), horBase = horarios.filter(h => String(h.recurso_id) === base), conHorario = new Set(horarios.map(h => String(h.recurso_id)));
+    const usados = new Set(), asignado = [];
+    lista.slice(0, 12).forEach(n => { const r = propios.find(x => !usados.has(String(x.id)) && String(x.nombre).toLowerCase() === n.toLowerCase()); if (r) { usados.add(String(r.id)); asignado.push({ nombre: n, rid: String(r.id) }); } else asignado.push({ nombre: n, rid: '' }); });
+    let mayor = 1; propios.forEach(r => { const m = /_p(\d+)$/.exec(String(r.id)); if (m) mayor = Math.max(mayor, Number(m[1])); });
+    asignado.filter(x => !x.rid).forEach(x => {
+      const libreBase = propios.find(r => String(r.id) === base && !usados.has(base) && String(r.nombre).toLowerCase() === generico);
+      x.rid = libreBase ? base : base + '_p' + (++mayor); usados.add(x.rid);
+    });
+    let color = todos.length;
+    asignado.forEach(x => {
+      const fila = buscarFila_(shR, x.rid);
+      if (fila > 0) { shR.getRange(fila, hR.indexOf('nombre') + 1).setValue(valorCelda_('nombre', x.nombre)); shR.getRange(fila, hR.indexOf('activo') + 1).setValue('si'); }
+      else agregarFila_(HOJAS.recursos, COL_RECURSOS, { id: x.rid, nombre: x.nombre, tipo: 'profesional', color: COLORES_[color++ % COLORES_.length], usuario_email: '', activo: 'si' });
+      if (!conHorario.has(x.rid)) horBase.forEach(h => agregarFila_(HOJAS.horarios, COL_HORARIOS, { recurso_id: x.rid, dia_semana: h.dia_semana, desde: h.desde, hasta: h.hasta }));
+    });
+    propios.forEach(r => { if (!usados.has(String(r.id))) { const fila = buscarFila_(shR, r.id); if (fila > 0) shR.getRange(fila, hR.indexOf('activo') + 1).setValue('no'); } });
+    const shS = obtenerHoja_(HOJAS.servicios), hS = asegurarColumnas_(shS, COL_SERVICIOS), rids = asignado.map(x => x.rid).join(',');
+    leerHojaDirecto_(HOJAS.servicios).filter(sv => String(sv.actividad) === id && !(Number(sv.cupo) > 1)).forEach(sv => { const fila = buscarFila_(shS, sv.id); if (fila > 0) shS.getRange(fila, hS.indexOf('recursos') + 1).setValue(rids); });
+  } finally { lock.releaseLock(); HOJAS_CACHE.forEach(invalidarHoja_); }
 }
 
 // ── Entrada ───────────────────────────────────────────────────────
@@ -226,6 +262,18 @@ function inicio_() {
 
 
 // Clases con cupo de hoy y los próximos días, con lugares libres (para el Hub de Bienestar). Solo cuenta lugares: no devuelve datos de personas.
+// Puestos de atención en uso ahora (sillas, camillas, cabinas) por actividad. Solo cuentas, sin datos de personas.
+function puestosAhora_(c, ocupados) {
+  const ahora = ahoraMin_(), tramo = ahora - (ahora % c.paso_min), out = [];
+  lista_(c.actividades).forEach(id => {
+    const a = (CATALOGO_.actividades || []).find(x => x.id === id), n = Math.floor(Number(c['puestos_' + id]));
+    if (!a || !a.puesto || !(n > 0)) return;
+    const usados = Math.min(ocupados[claveSlot_('P_' + id, tramo)] || 0, n);
+    const prof = activos_(HOJAS.recursos).filter(r => String(r.id) === 'R_' + id || String(r.id).indexOf('R_' + id + '_p') === 0).length;
+    out.push({ actividad: id, nombre: a.nombre, uno: a.puesto.uno, varios: a.puesto.varios, total: n, ocupados: usados, libres: n - usados, profesionales: prof });
+  });
+  return out;
+}
 function clasesDias_(p) {
   const c = config_(), dias = Math.min(Math.max(Number(p.dias) || 4, 1), 14), hoy = deMin_(ahoraMin_()).fecha, ahora = ahoraMin_();
   const ocupados = mapaOcupados_(), horarios = leerHoja_(HOJAS.horarios), bloqueos = leerHoja_(HOJAS.bloqueos);
@@ -245,7 +293,7 @@ function clasesDias_(p) {
     });
   });
   out.sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora));
-  return { ok: true, clases: out };
+  return { ok: true, clases: out, puestos: puestosAhora_(c, ocupados) };
 }
 
 // ── Tiempo (todo en minutos "de pared", sin depender de la zona del servidor) ──
@@ -261,9 +309,11 @@ function claveSlot_(recurso, min) { const t = deMin_(min); return recurso + '|' 
 // Devuelve los inicios libres de un recurso/servicio para una fecha.
 // Cupo: personas por horario. Servicio individual = 1 (un turno por tramo). Clase = cupo > 1: cada fila de «horarios» es UNA clase que empieza en «desde».
 function cupoDe_(serv) { const n = Math.floor(Number(serv && serv.cupo)); return n > 1 ? Math.min(n, 500) : 1; }
+// Puestos de atención (sillas, camillas, cabinas): tope de turnos a la vez en toda una actividad, sin importar el profesional.
+function puestosDe_(c, serv) { const a = String((serv && serv.actividad) || ''); const n = Math.floor(Number(c['puestos_' + a])); return a && n > 0 ? { act: a, n: Math.min(n, 100) } : null; }
 function inicioLibres_(c, serv, recursoId, fecha, ocupados, horarios, bloqueos, conLugares) {
   const out = [], dur = Number(serv.duracion_min), paso = c.paso_min, cupo = cupoDe_(serv);
-  const dow = diaSemana_(fecha), ahora = ahoraMin_();
+  const dow = diaSemana_(fecha), ahora = ahoraMin_(), lim = cupo > 1 ? null : puestosDe_(c, serv);
   const minInicio = ahora + c.anticipacion_min_horas * 60, maxInicio = ahora + c.ventana_dias * 1440;
   horarios.filter(h => String(h.recurso_id) === String(recursoId) && Number(h.dia_semana) === dow).forEach(h => {
     const d = aMin_(fecha, h.desde), ha = aMin_(fecha, h.hasta);
@@ -271,7 +321,7 @@ function inicioLibres_(c, serv, recursoId, fecha, ocupados, horarios, bloqueos, 
       if (ini < minInicio || ini > maxInicio) continue;
       let libre = true;
       let usados = 0;
-      for (let t = ini; t < ini + dur; t += paso) { const u = ocupados[claveSlot_(recursoId, t)] || 0; if (u > usados) usados = u; if (u >= cupo) { libre = false; break; } }
+      for (let t = ini; t < ini + dur; t += paso) { const u = ocupados[claveSlot_(recursoId, t)] || 0; if (u > usados) usados = u; if (u >= cupo) { libre = false; break; } if (lim && (ocupados[claveSlot_('P_' + lim.act, t)] || 0) >= lim.n) { libre = false; break; } }
       if (libre && enBloqueo_(bloqueos, recursoId, ini, ini + dur)) libre = false;
       if (libre) { const hh = deMin_(ini).hora; out.push(hh); if (conLugares) conLugares[hh] = cupo - usados; }
     }
@@ -315,20 +365,22 @@ function ocuparYGuardar_(datos, opciones) {
     const c = config_();
     const serv = activos_(HOJAS.servicios).find(s => String(s.id) === String(datos.servicio_id));
     if (!serv) throw falla_('servicio_invalido');
-    if (lista_(serv.recursos).indexOf(String(datos.recurso_id)) < 0) throw falla_('recurso_invalido');
-    if (!activos_(HOJAS.recursos).some(r => String(r.id) === String(datos.recurso_id))) throw falla_('recurso_invalido');
     if (!validaFecha_(datos.fecha) || !validaHora_(datos.hora)) throw falla_('fecha_invalida');
     const dur = Number(serv.duracion_min), ini = aMin_(datos.fecha, datos.hora);
     if (ini % c.paso_min !== 0) throw falla_('horario_invalido');
     const ocup = mapaOcupados_();
+    if (!datos.recurso_id || datos.recurso_id === 'auto') datos.recurso_id = elegirProfesional_(c, serv, datos, ocup); // «cualquiera»: el que esté libre y tenga menos turnos ese día
+    if (lista_(serv.recursos).indexOf(String(datos.recurso_id)) < 0) throw falla_('recurso_invalido');
+    if (!activos_(HOJAS.recursos).some(r => String(r.id) === String(datos.recurso_id))) throw falla_('recurso_invalido');
     const libres = inicioLibres_(c, serv, datos.recurso_id, datos.fecha, ocup, leerHoja_(HOJAS.horarios), leerHoja_(HOJAS.bloqueos));
     const fuerza = opciones && opciones.forzar;
-    if (!fuerza) { if (libres.indexOf(datos.hora) < 0) throw falla_(horaOcupada_(datos, dur, c, ocup, cupoDe_(serv)) ? 'horario_ocupado' : 'fuera_de_horario'); }
+    if (!fuerza) { if (libres.indexOf(datos.hora) < 0) throw falla_(horaOcupada_(datos, dur, c, ocup, cupoDe_(serv), cupoDe_(serv) > 1 ? null : puestosDe_(c, serv)) ? 'horario_ocupado' : 'fuera_de_horario'); }
     else if (horaOcupada_(datos, dur, c, ocup, cupoDe_(serv))) throw falla_('horario_ocupado');
     const id = 'T' + Utilities.getUuid().replace(/-/g, '').slice(0, 10);
     const codigo = Utilities.getUuid().replace(/-/g, '').slice(0, 16);
     const filaSlots = [];
-    for (let t = ini; t < ini + dur; t += c.paso_min) filaSlots.push([claveSlot_(datos.recurso_id, t), id]);
+    const lim = cupoDe_(serv) > 1 ? null : puestosDe_(c, serv);
+    for (let t = ini; t < ini + dur; t += c.paso_min) { filaSlots.push([claveSlot_(datos.recurso_id, t), id]); if (lim) filaSlots.push([claveSlot_('P_' + lim.act, t), id]); }
     const ahora = new Date().toISOString();
     const t = Object.assign({ id: id, codigo: codigo, duracion_min: dur, creado: ahora, actualizado: ahora, avisado: '' }, datos);
     agregarFila_(HOJAS.turnos, COL_TURNOS, t);
@@ -338,9 +390,18 @@ function ocuparYGuardar_(datos, opciones) {
     return t;
   } finally { lock.releaseLock(); }
 }
-function horaOcupada_(d, dur, c, ocup, cupo) {
+// Elige, entre los profesionales del servicio, uno libre en ese horario (respeta los puestos). Reparte: prefiere al que tiene menos turnos ese día.
+function elegirProfesional_(c, serv, datos, ocup) {
+  const horarios = leerHoja_(HOJAS.horarios), bloqueos = leerHoja_(HOJAS.bloqueos), activos = activos_(HOJAS.recursos).map(r => String(r.id));
+  const cand = lista_(serv.recursos).filter(r => activos.indexOf(r) > -1).filter(r => inicioLibres_(c, serv, r, datos.fecha, ocup, horarios, bloqueos).indexOf(datos.hora) > -1);
+  if (!cand.length) throw falla_('horario_ocupado');
+  const carga = r => { let n = 0; Object.keys(ocup).forEach(k => { if (k.indexOf(r + '|' + datos.fecha + '|') === 0) n += ocup[k]; }); return n; };
+  cand.sort((a, b) => carga(a) - carga(b));
+  return cand[0];
+}
+function horaOcupada_(d, dur, c, ocup, cupo, lim) {
   const ini = aMin_(d.fecha, d.hora), tope = cupo || 1;
-  for (let t = ini; t < ini + dur; t += c.paso_min) if ((ocup[claveSlot_(d.recurso_id, t)] || 0) >= tope) return true;
+  for (let t = ini; t < ini + dur; t += c.paso_min) { if ((ocup[claveSlot_(d.recurso_id, t)] || 0) >= tope) return true; if (lim && (ocup[claveSlot_('P_' + lim.act, t)] || 0) >= lim.n) return true; }
   return false;
 }
 function liberarSlots_(turnoId) { // se llama dentro del cerrojo
@@ -366,7 +427,8 @@ function reservar_(p) {
   const t = ocuparYGuardar_({ estado: estado, fecha: p.fecha, hora: p.hora, recurso_id: p.recurso_id, servicio_id: p.servicio_id, contacto_nombre: nombre, contacto_tel: tel, contacto_email: email, sujeto_nombre: limpiar_(p.sujeto_nombre, 60), sujeto_tipo: limpiar_(p.sujeto_tipo, 30), nota: limpiar_(p.nota, 300), origen: 'web', consentimiento: 'si' });
   cache.put(kT, String(n + 1), 86400);
   avisoCorreo_(t, estado === 'Confirmado' ? 'confirmado' : 'recibido', c);
-  return { ok: true, codigo: t.codigo, estado: estado, fecha: t.fecha, hora: t.hora };
+  const rr = activos_(HOJAS.recursos).find(x => String(x.id) === String(t.recurso_id));
+  return { ok: true, codigo: t.codigo, estado: estado, fecha: t.fecha, hora: t.hora, profesional: rr ? rr.nombre : '' };
 }
 function limpiar_(v, max) { return String(v == null ? '' : v).replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, max); }
 
@@ -647,7 +709,7 @@ function agregarFila_(hoja, columnas, obj) {
 // El catálogo sale de turnos/catalogo-actividades.json (única fuente). NO editar a mano entre las marcas:
 // correr «node alta/sincronizar-catalogo.js» en la copia del código.
 // <CATALOGO>
-const CATALOGO_ = {"version":1,"actividades":[{"id":"gimnasio","nombre":"Gimnasio y musculación","texto":"Sala de musculación, planes mensuales y evaluaciones.","persona":"socio","recurso":{"nombre":"Evaluación física","tipo":"profesional"},"servicios":[{"nombre":"Evaluación física inicial","duracion_min":60},{"nombre":"Plan de entrenamiento personalizado","duracion_min":60},{"nombre":"Entrenamiento personal","duracion_min":60}],"horarios":[{"dias":[1,2,3,4,5],"desde":"09:00","hasta":"13:00"},{"dias":[1,2,3,4,5],"desde":"16:00","hasta":"20:00"}]},{"id":"clases","nombre":"Clases grupales","texto":"Funcional, spinning, zumba y otras clases con cupos.","persona":"alumno","clases":[{"nombre":"Funcional","cupo":15,"duracion_min":60,"sala":"Sala funcional","horarios":[{"dias":[1,3,5],"desde":"08:00","hasta":"09:00"},{"dias":[1,3,5],"desde":"19:00","hasta":"20:00"}]},{"nombre":"Spinning","cupo":20,"duracion_min":60,"sala":"Sala de spinning","horarios":[{"dias":[2,4],"desde":"08:00","hasta":"09:00"},{"dias":[1,2,3,4,5],"desde":"20:00","hasta":"21:00"}]},{"nombre":"Zumba","cupo":25,"duracion_min":60,"sala":"Salón de baile","horarios":[{"dias":[2,4],"desde":"19:00","hasta":"20:00"}]}]},{"id":"yoga","nombre":"Yoga y pilates","texto":"Clases de yoga, pilates y estiramiento con cupos reducidos.","persona":"alumno","clases":[{"nombre":"Yoga","cupo":12,"duracion_min":60,"sala":"Sala de yoga","horarios":[{"dias":[1,3],"desde":"09:00","hasta":"10:00"},{"dias":[2,4],"desde":"19:00","hasta":"20:00"}]},{"nombre":"Pilates","cupo":8,"duracion_min":60,"sala":"Sala de pilates","horarios":[{"dias":[1,3,5],"desde":"10:00","hasta":"11:00"},{"dias":[2,4],"desde":"18:00","hasta":"19:00"}]}]},{"id":"spa","nombre":"Spa y masajes","texto":"Masajes, circuitos de spa y tratamientos corporales.","persona":"cliente","recurso":{"nombre":"Masajista","tipo":"profesional"},"servicios":[{"nombre":"Masaje descontracturante","duracion_min":60},{"nombre":"Masaje relajante","duracion_min":60},{"nombre":"Drenaje linfático","duracion_min":60},{"nombre":"Masaje con piedras calientes","duracion_min":90}],"horarios":[{"dias":[1,2,3,4,5],"desde":"10:00","hasta":"13:00"},{"dias":[1,2,3,4,5],"desde":"15:00","hasta":"20:00"}]},{"id":"peluqueria","nombre":"Peluquería","texto":"Cortes, color, brushing y peinados.","persona":"cliente","recurso":{"nombre":"Peluquero/a","tipo":"profesional"},"servicios":[{"nombre":"Corte","duracion_min":30},{"nombre":"Corte y brushing","duracion_min":60},{"nombre":"Color","duracion_min":120},{"nombre":"Mechas o balayage","duracion_min":180},{"nombre":"Peinado para evento","duracion_min":60}],"horarios":[{"dias":[2,3,4,5,6],"desde":"09:00","hasta":"13:00"},{"dias":[2,3,4,5,6],"desde":"15:00","hasta":"20:00"}]},{"id":"barberia","nombre":"Barbería","texto":"Cortes y arreglo de barba.","persona":"cliente","recurso":{"nombre":"Barbero","tipo":"profesional"},"servicios":[{"nombre":"Corte de pelo","duracion_min":30},{"nombre":"Corte y barba","duracion_min":60},{"nombre":"Arreglo de barba","duracion_min":30}],"horarios":[{"dias":[2,3,4,5,6],"desde":"10:00","hasta":"13:00"},{"dias":[2,3,4,5,6],"desde":"15:00","hasta":"20:00"}]},{"id":"unas","nombre":"Uñas","texto":"Manicuría, esmaltado semipermanente y esculpidas.","persona":"cliente","recurso":{"nombre":"Manicura","tipo":"profesional"},"servicios":[{"nombre":"Manicuría","duracion_min":60},{"nombre":"Esmaltado semipermanente","duracion_min":60},{"nombre":"Uñas esculpidas","duracion_min":120},{"nombre":"Pedicuría","duracion_min":60}],"horarios":[{"dias":[2,3,4,5,6],"desde":"09:00","hasta":"13:00"},{"dias":[2,3,4,5,6],"desde":"15:00","hasta":"19:00"}]},{"id":"estetica","nombre":"Estética y depilación","texto":"Limpiezas faciales, depilación, pestañas y cejas.","persona":"cliente","recurso":{"nombre":"Esteticista","tipo":"profesional"},"servicios":[{"nombre":"Limpieza facial","duracion_min":60},{"nombre":"Depilación definitiva","duracion_min":30},{"nombre":"Perfilado de cejas","duracion_min":30},{"nombre":"Lifting de pestañas","duracion_min":60}],"horarios":[{"dias":[1,2,3,4,5],"desde":"10:00","hasta":"13:00"},{"dias":[1,2,3,4,5],"desde":"15:00","hasta":"19:00"}]},{"id":"consultorio","nombre":"Nutrición y kinesiología","texto":"Consultas individuales de nutrición, kinesiología o entrenamiento terapéutico.","persona":"paciente","recurso":{"nombre":"Profesional de salud","tipo":"profesional"},"servicios":[{"nombre":"Consulta nutricional","duracion_min":60},{"nombre":"Sesión de kinesiología","duracion_min":60},{"nombre":"Control de seguimiento","duracion_min":30}],"horarios":[{"dias":[1,2,3,4,5],"desde":"09:00","hasta":"13:00"},{"dias":[1,3,5],"desde":"16:00","hasta":"19:00"}]}]};
+const CATALOGO_ = {"version":1,"actividades":[{"id":"gimnasio","nombre":"Gimnasio y musculación","texto":"Sala de musculación, planes mensuales y evaluaciones.","persona":"socio","recurso":{"nombre":"Evaluación física","tipo":"profesional"},"servicios":[{"nombre":"Evaluación física inicial","duracion_min":60},{"nombre":"Plan de entrenamiento personalizado","duracion_min":60},{"nombre":"Entrenamiento personal","duracion_min":60}],"horarios":[{"dias":[1,2,3,4,5],"desde":"09:00","hasta":"13:00"},{"dias":[1,2,3,4,5],"desde":"16:00","hasta":"20:00"}]},{"id":"clases","nombre":"Clases grupales","texto":"Funcional, spinning, zumba y otras clases con cupos.","persona":"alumno","clases":[{"nombre":"Funcional","cupo":15,"duracion_min":60,"sala":"Sala funcional","horarios":[{"dias":[1,3,5],"desde":"08:00","hasta":"09:00"},{"dias":[1,3,5],"desde":"19:00","hasta":"20:00"}]},{"nombre":"Spinning","cupo":20,"duracion_min":60,"sala":"Sala de spinning","horarios":[{"dias":[2,4],"desde":"08:00","hasta":"09:00"},{"dias":[1,2,3,4,5],"desde":"20:00","hasta":"21:00"}]},{"nombre":"Zumba","cupo":25,"duracion_min":60,"sala":"Salón de baile","horarios":[{"dias":[2,4],"desde":"19:00","hasta":"20:00"}]}]},{"id":"yoga","nombre":"Yoga y pilates","texto":"Clases de yoga, pilates y estiramiento con cupos reducidos.","persona":"alumno","clases":[{"nombre":"Yoga","cupo":12,"duracion_min":60,"sala":"Sala de yoga","horarios":[{"dias":[1,3],"desde":"09:00","hasta":"10:00"},{"dias":[2,4],"desde":"19:00","hasta":"20:00"}]},{"nombre":"Pilates","cupo":8,"duracion_min":60,"sala":"Sala de pilates","horarios":[{"dias":[1,3,5],"desde":"10:00","hasta":"11:00"},{"dias":[2,4],"desde":"18:00","hasta":"19:00"}]}]},{"id":"spa","nombre":"Spa y masajes","texto":"Masajes, circuitos de spa y tratamientos corporales.","persona":"cliente","recurso":{"nombre":"Masajista","tipo":"profesional"},"servicios":[{"nombre":"Masaje descontracturante","duracion_min":60},{"nombre":"Masaje relajante","duracion_min":60},{"nombre":"Drenaje linfático","duracion_min":60},{"nombre":"Masaje con piedras calientes","duracion_min":90}],"horarios":[{"dias":[1,2,3,4,5],"desde":"10:00","hasta":"13:00"},{"dias":[1,2,3,4,5],"desde":"15:00","hasta":"20:00"}],"puesto":{"uno":"camilla","varios":"camillas"}},{"id":"peluqueria","nombre":"Peluquería","texto":"Cortes, color, brushing y peinados.","persona":"cliente","recurso":{"nombre":"Peluquero/a","tipo":"profesional"},"servicios":[{"nombre":"Corte","duracion_min":30},{"nombre":"Corte y brushing","duracion_min":60},{"nombre":"Color","duracion_min":120},{"nombre":"Mechas o balayage","duracion_min":180},{"nombre":"Peinado para evento","duracion_min":60}],"horarios":[{"dias":[2,3,4,5,6],"desde":"09:00","hasta":"13:00"},{"dias":[2,3,4,5,6],"desde":"15:00","hasta":"20:00"}],"puesto":{"uno":"silla","varios":"sillas"}},{"id":"barberia","nombre":"Barbería","texto":"Cortes y arreglo de barba.","persona":"cliente","recurso":{"nombre":"Barbero","tipo":"profesional"},"servicios":[{"nombre":"Corte de pelo","duracion_min":30},{"nombre":"Corte y barba","duracion_min":60},{"nombre":"Arreglo de barba","duracion_min":30}],"horarios":[{"dias":[2,3,4,5,6],"desde":"10:00","hasta":"13:00"},{"dias":[2,3,4,5,6],"desde":"15:00","hasta":"20:00"}],"puesto":{"uno":"silla","varios":"sillas"}},{"id":"unas","nombre":"Uñas","texto":"Manicuría, esmaltado semipermanente y esculpidas.","persona":"cliente","recurso":{"nombre":"Manicura","tipo":"profesional"},"servicios":[{"nombre":"Manicuría","duracion_min":60},{"nombre":"Esmaltado semipermanente","duracion_min":60},{"nombre":"Uñas esculpidas","duracion_min":120},{"nombre":"Pedicuría","duracion_min":60}],"horarios":[{"dias":[2,3,4,5,6],"desde":"09:00","hasta":"13:00"},{"dias":[2,3,4,5,6],"desde":"15:00","hasta":"19:00"}],"puesto":{"uno":"puesto","varios":"puestos"}},{"id":"estetica","nombre":"Estética y depilación","texto":"Limpiezas faciales, depilación, pestañas y cejas.","persona":"cliente","recurso":{"nombre":"Esteticista","tipo":"profesional"},"servicios":[{"nombre":"Limpieza facial","duracion_min":60},{"nombre":"Depilación definitiva","duracion_min":30},{"nombre":"Perfilado de cejas","duracion_min":30},{"nombre":"Lifting de pestañas","duracion_min":60}],"horarios":[{"dias":[1,2,3,4,5],"desde":"10:00","hasta":"13:00"},{"dias":[1,2,3,4,5],"desde":"15:00","hasta":"19:00"}],"puesto":{"uno":"camilla","varios":"camillas"}},{"id":"consultorio","nombre":"Nutrición y kinesiología","texto":"Consultas individuales de nutrición, kinesiología o entrenamiento terapéutico.","persona":"paciente","recurso":{"nombre":"Profesional de salud","tipo":"profesional"},"servicios":[{"nombre":"Consulta nutricional","duracion_min":60},{"nombre":"Sesión de kinesiología","duracion_min":60},{"nombre":"Control de seguimiento","duracion_min":30}],"horarios":[{"dias":[1,2,3,4,5],"desde":"09:00","hasta":"13:00"},{"dias":[1,3,5],"desde":"16:00","hasta":"19:00"}],"puesto":{"uno":"consultorio","varios":"consultorios"}}]};
 // </CATALOGO>
 const COL_RECURSOS = ['id', 'nombre', 'tipo', 'color', 'usuario_email', 'activo'];
 const COL_SERVICIOS = ['id', 'nombre', 'duracion_min', 'recursos', 'publico', 'activo', 'cupo', 'actividad', 'profesor'];

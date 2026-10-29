@@ -27,3 +27,10 @@ Ver `GUIA_Alta_de_cliente_nuevo.md` (rubro `bienestar`). `node alta/preparar-cli
 
 ## Multi-centro
 Una sola app para muchos centros: datos en `negocios/{id}/…`, personal en `users/{correo}` con `negocio_id`, alta en `/centros/`. Detalle en MANUAL_Claudio_DOMino_Bienestar.md. Reglas: `firestore.rules` (pegar en Firestore → Reglas). Turnos: Code.gs nuevo (Implementar → nueva versión; autorizar los permisos nuevos de hojas y de conexión externa).
+
+## Puestos de atención y equipo
+- El catálogo (`turnos/catalogo-actividades.json`) marca con `puesto` las actividades que atienden en silla, camilla o cabina. Se sincroniza con `node alta/sincronizar-catalogo.js`.
+- El Hub (botón «Equipo y puestos») guarda `equipo` y `puestos` en Firestore `config/negocio` y los manda a la agenda con `sincronizar_actividades`.
+- En la planilla: clave `puestos_<actividad>` en la hoja config; cada profesional es un recurso `R_<actividad>` / `R_<actividad>_p2`…; los turnos reservan además un tramo `P_<actividad>|fecha|hora` en la hoja slots (así nunca se pasan de los puestos).
+- Reserva sin elegir profesional: `recurso_id: "auto"`; el servidor elige al libre con menos turnos ese día.
+- **Al publicar esta versión hay que pegar el nuevo Code.gs en Apps Script y volver a implementar.** Las pruebas: `node turnos/test/run_puestos.js`.

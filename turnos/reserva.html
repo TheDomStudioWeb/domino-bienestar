@@ -46,7 +46,7 @@ import { llamar, msg } from './api.js';
 const $ = s => document.querySelector(s), M = $('#m');
 const E = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const DS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
-const S = { cfg: null, paso: 0, serv: null, dias: [], fecha: null, rec: null, hora: null, enviando: false };
+const S = { cfg: null, paso: 0, serv: null, dias: [], fecha: null, rec: null, hora: null, pref: 'auto', enviando: false };
 const dow = f => new Date(f + 'T00:00:00Z').getUTCDay(), dd = f => f.slice(8), larga = f => `${DS[dow(f)]} ${+f.slice(8)}/${+f.slice(5, 7)}`;
 const hoyLocal = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
 function pasos(n) { const p = $('#pasos'); p.hidden = n === 0; [...p.children].forEach((e, i) => e.classList.toggle('on', i < n)); }
@@ -69,7 +69,7 @@ function dibujar() { ([pServicio, pHorario, pDatos][S.paso] || pServicio)(); }
 function pServicio() {
   pasos(1);
   M.innerHTML = `<h2>¿Qué necesita?</h2><div class="lista">${S.cfg.servicios.map(s => `<button class="op" data-s="${E(s.id)}"><span>${E(s.nombre)}<small>${s.duracion_min} min</small></span><span aria-hidden="true">›</span></button>`).join('')}</div>`;
-  M.querySelectorAll('.op').forEach(b => b.onclick = () => { S.serv = S.cfg.servicios.find(s => s.id === b.dataset.s); S.fecha = S.hora = S.rec = null; S.dias = []; ir(1); });
+  M.querySelectorAll('.op').forEach(b => b.onclick = () => { S.serv = S.cfg.servicios.find(s => s.id === b.dataset.s); S.pref = 'auto'; S.fecha = S.hora = S.rec = null; S.dias = []; ir(1); });
 }
 async function pHorario() {
   pasos(2);
@@ -82,23 +82,31 @@ async function pHorario() {
     S.dias = r.dias;
   }
   if (!S.dias.length) { M.innerHTML = `<button class="volver" id="v">‹ Volver</button><h2>${E(S.serv.nombre)}</h2><p>No hay horarios disponibles en los próximos días. Llámenos${S.cfg.negocio.telefono ? ' al <b>' + E(S.cfg.negocio.telefono) + '</b>' : ''}.</p>`; $('#v').onclick = () => history.back(); return; }
-  if (!S.fecha) S.fecha = S.dias[0].fecha;
+  const equipo = (S.serv.recursos || []).filter(id => S.cfg.recursos.some(r => r.id === id));
+  const elige = equipo.length > 1 && !(S.serv.cupo > 1); // varios profesionales y turno individual: puede elegir con quién
+  if (!elige) S.pref = 'auto';
   const nom = id => (S.cfg.recursos.find(r => r.id === id) || {}).nombre || id;
-  const dia = S.dias.find(d => d.fecha === S.fecha);
-  M.innerHTML = `<button class="volver" id="v">‹ Volver</button><h2>${E(S.serv.nombre)}</h2><p style="margin:0 0 8px;color:var(--mut)">Elija el día</p>
-  <div class="dias" role="group">${S.dias.map(d => `<button class="dia" data-f="${d.fecha}" aria-pressed="${d.fecha === S.fecha}"><span>${DS[dow(d.fecha)]}</span><b>${dd(d.fecha)}</b><span>${['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'][+d.fecha.slice(5, 7) - 1]}</span></button>`).join('')}</div>
+  const dias = S.dias.map(d => { const rs = S.pref === 'auto' ? d.recursos : (d.recursos[S.pref] ? { [S.pref]: d.recursos[S.pref] } : {}); return Object.assign({}, d, { rs }); }).filter(d => Object.keys(d.rs).length);
+  const quien = elige ? `<p style="margin:0 0 6px;color:var(--mut)">¿Con quién?</p><div class="dias" role="group" aria-label="Profesional" style="flex-wrap:wrap"><button class="dia" data-q="auto" aria-pressed="${S.pref === 'auto'}" style="min-width:auto;padding:10px 14px"><b style="font-size:1em">Cualquiera disponible</b></button>${equipo.map(id => `<button class="dia" data-q="${E(id)}" aria-pressed="${S.pref === id}" style="min-width:auto;padding:10px 14px"><b style="font-size:1em">${E(nom(id))}</b></button>`).join('')}</div>${S.pref === 'auto' ? '<p style="margin:6px 0 10px;color:var(--mut);font-size:.9em">Le asignamos a quien esté libre a esa hora.</p>' : ''}` : '';
+  if (!dias.length) { M.innerHTML = `<button class="volver" id="v">‹ Volver</button><h2>${E(S.serv.nombre)}</h2>${quien}<p>No hay horarios disponibles${S.pref !== 'auto' ? ' con ' + E(nom(S.pref)) : ''} en los próximos días. ${S.pref !== 'auto' ? 'Pruebe con otra persona o con «Cualquiera disponible».' : ''}</p>`; $('#v').onclick = () => history.back(); M.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { S.pref = b.dataset.q; S.fecha = S.rec = S.hora = null; pHorario(); }); return; }
+  if (!S.fecha || !dias.some(d => d.fecha === S.fecha)) S.fecha = dias[0].fecha;
+  const dia = dias.find(d => d.fecha === S.fecha);
+  const horas = S.pref === 'auto' ? [{ r: 'auto', nombre: '', hs: [...new Set(Object.values(dia.rs).flat())].sort() }] : Object.entries(dia.rs).map(([r, hs]) => ({ r, nombre: nom(r), hs }));
+  M.innerHTML = `<button class="volver" id="v">‹ Volver</button><h2>${E(S.serv.nombre)}</h2>${quien}<p style="margin:0 0 8px;color:var(--mut)">Elija el día</p>
+  <div class="dias" role="group">${dias.map(d => `<button class="dia" data-f="${d.fecha}" aria-pressed="${d.fecha === S.fecha}"><span>${DS[dow(d.fecha)]}</span><b>${dd(d.fecha)}</b><span>${['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'][+d.fecha.slice(5, 7) - 1]}</span></button>`).join('')}</div>
   <p style="margin:6px 0 0;color:var(--mut)">Elija la hora</p>
-  ${Object.entries(dia.recursos).map(([r, hs]) => `<div class="prof" style="--c:${E(((S.cfg.recursos.find(x => x.id === r) || {}).color) || '#D4AF37')}"><i></i>${E(nom(r))}</div><div class="hs">${hs.map(h => `<button class="h" data-r="${E(r)}" data-h="${h}" aria-pressed="${S.rec === r && S.hora === h}">${h}${dia.lugares && dia.lugares[r] && dia.lugares[r][h] != null ? `<small style="display:block;font-size:.72em;opacity:.8">${dia.lugares[r][h] === 1 ? 'queda 1 lugar' : dia.lugares[r][h] + ' lugares'}</small>` : ''}</button>`).join('')}</div>`).join('')}
+  ${horas.map(g => `${g.nombre ? `<div class="prof" style="--c:${E(((S.cfg.recursos.find(x => x.id === g.r) || {}).color) || '#D4AF37')}"><i></i>${E(g.nombre)}</div>` : ''}<div class="hs">${g.hs.map(h => `<button class="h" data-r="${E(g.r)}" data-h="${h}" aria-pressed="${S.rec === g.r && S.hora === h}">${h}${dia.lugares && dia.lugares[g.r] && dia.lugares[g.r][h] != null ? `<small style="display:block;font-size:.72em;opacity:.8">${dia.lugares[g.r][h] === 1 ? 'queda 1 lugar' : dia.lugares[g.r][h] + ' lugares'}</small>` : ''}</button>`).join('')}</div>`).join('')}
   <button class="btn" id="sig" ${S.hora ? '' : 'disabled'}>Continuar</button>`;
   $('#v').onclick = () => history.back();
-  M.querySelectorAll('.dia').forEach(b => b.onclick = () => { S.fecha = b.dataset.f; S.rec = S.hora = null; pHorario(); });
+  M.querySelectorAll('[data-q]').forEach(b => b.onclick = () => { S.pref = b.dataset.q; S.rec = S.hora = null; pHorario(); });
+  M.querySelectorAll('.dia[data-f]').forEach(b => b.onclick = () => { S.fecha = b.dataset.f; S.rec = S.hora = null; pHorario(); });
   M.querySelectorAll('.h').forEach(b => b.onclick = () => { S.rec = b.dataset.r; S.hora = b.dataset.h; M.querySelectorAll('.h').forEach(x => x.setAttribute('aria-pressed', x === b)); $('#sig').disabled = false; });
   $('#sig').onclick = () => ir(2);
 }
 function pDatos() {
   pasos(3);
   const esVet = S.cfg.negocio.rubro === 'veterinaria';
-  const nom = (S.cfg.recursos.find(r => r.id === S.rec) || {}).nombre;
+  const nom = S.rec === 'auto' ? 'Quien esté libre (se asigna al reservar)' : (S.cfg.recursos.find(r => r.id === S.rec) || {}).nombre;
   M.innerHTML = `<button class="volver" id="v">‹ Volver</button><h2>Sus datos</h2>
   <div class="res"><div><span>Servicio</span><b>${E(S.serv.nombre)}</b></div><div><span>Día y hora</span><b>${larga(S.fecha)} · ${S.hora}</b></div><div><span>Con</span><b>${E(nom)}</b></div></div>
   <form id="f" novalidate autocomplete="on">
@@ -120,7 +128,7 @@ function pDatos() {
     if (!r.ok) { if (r.error === 'horario_ocupado' || r.error === 'fuera_de_horario') { S.dias = []; S.pre = {}; S.hora = S.rec = null; S.paso = 1; history.replaceState({ n: 1 }, ''); await pHorario(); M.insertAdjacentHTML('afterbegin', err(r.error)); return; } $('#er').innerHTML = err(r.error); $('#er').scrollIntoView({ block: 'center' }); $('#go').disabled = false; $('#go').textContent = S.cfg.negocio.modo_reserva === 'solicitud' ? 'Enviar solicitud' : 'Reservar turno'; return; }
     S.listo = r; const url = location.origin + location.pathname + '?c=' + r.codigo;
     history.replaceState({ n: 0 }, ''); pasos(0);
-    M.innerHTML = `<div class="ok"><h2>${r.estado === 'Confirmado' ? '¡Turno reservado!' : '¡Solicitud enviada!'}</h2><p style="margin:0">${larga(r.fecha)} a las <b>${r.hora}</b>.${r.estado === 'Por confirmar' ? ' Le confirmaremos por teléfono o WhatsApp.' : ''}</p></div>
+    M.innerHTML = `<div class="ok"><h2>${r.estado === 'Confirmado' ? '¡Turno reservado!' : '¡Solicitud enviada!'}</h2><p style="margin:0">${larga(r.fecha)} a las <b>${r.hora}</b>${r.profesional && S.pref !== undefined && r.profesional !== 'null' ? ' con <b>' + E(r.profesional) + '</b>' : ''}.${r.estado === 'Por confirmar' ? ' Le confirmaremos por teléfono o WhatsApp.' : ''}</p></div>
     <p><b>Guarde este enlace</b> para ver o cancelar su turno:</p><div class="link">${E(url)}</div>
     <button class="btn sec" id="cp">Copiar enlace</button><button class="btn sec" id="otro">Pedir otro turno</button>`;
     $('#cp').onclick = async () => { try { await navigator.clipboard.writeText(url); $('#cp').textContent = '¡Copiado!'; } catch (x) { const r = document.createRange(); r.selectNodeContents(document.querySelector('.link')); getSelection().removeAllRanges(); getSelection().addRange(r); $('#cp').textContent = 'Seleccionado: copie el enlace'; } };

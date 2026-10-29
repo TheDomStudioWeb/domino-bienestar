@@ -89,7 +89,7 @@ function asistente(tabInicial) {
   const f = document.createElement('div'); f.id = 'bn-fondo'; f.className = 'bn-fondo'; f.setAttribute('role', 'dialog'); f.setAttribute('aria-modal', 'true'); f.setAttribute('aria-labelledby', 'bn-t');
   f.innerHTML = `<form class="bn-caja" id="bn-form" novalidate>
     <button type="button" class="bn-x" id="bn-x" aria-label="Cerrar">✕</button>
-    <h2 id="bn-t">${primera ? 'Bienvenido a DOMino Bienestar' : 'Actividades y salones del centro'}</h2>
+    <h2 id="bn-t">${primera ? 'Bienvenido a DOMino Bienestar' : 'Actividades, salones y equipo del centro'}</h2>
     <p>${primera ? 'Antes de empezar, cuéntenos sobre su centro. Nombre, actividades y salones: lo puede cambiar cuando quiera.' : 'Sume o quite actividades. Los datos que ya cargó no se borran. Si suma una actividad nueva, The DOM Studio Web la deja lista en la agenda de turnos y en la página de reservas.'}</p>
     <label class="bn-l" for="bn-nombre">Nombre del centro</label>
     <input type="text" id="bn-nombre" maxlength="60" autocomplete="organization" placeholder="Ej. Vita Aura" value="${esc((negocio && negocio.nombre) || nombreInicial())}">
@@ -98,7 +98,7 @@ function asistente(tabInicial) {
     <label class="bn-l" for="bn-logo">Logo del centro (PNG o SVG, opcional)</label>
     <div class="bn-logo-fila"><div class="bn-logo-prev" id="bn-logo-prev">${negocio && negocio.logo ? `<img src="${esc(negocio.logo)}" alt="Logo actual">` : '<span>Sin logo</span>'}</div>
     <div style="display:grid;gap:6px"><input type="file" id="bn-logo" accept="image/png,image/svg+xml,.png,.svg"><button type="button" class="bn-btn sec" id="bn-logo-quitar"${negocio && negocio.logo ? '' : ' hidden'}>Quitar logo</button><small style="color:var(--text-muted,#a8a396)">Se muestra en el menú del Hub. Ideal: fondo transparente.</small></div></div>
-    <div class="bn-tabs" role="tablist"><button type="button" role="tab" class="bn-tab" id="bn-tab-a" aria-selected="true" aria-controls="bn-pan-a">Actividades</button><button type="button" role="tab" class="bn-tab" id="bn-tab-s" aria-selected="false" aria-controls="bn-pan-s">Salones${((negocio && negocio.salones) || []).length ? ' (' + negocio.salones.length + ')' : ''}</button></div>
+    <div class="bn-tabs" role="tablist"><button type="button" role="tab" class="bn-tab" id="bn-tab-a" aria-selected="true" aria-controls="bn-pan-a">Actividades</button><button type="button" role="tab" class="bn-tab" id="bn-tab-s" aria-selected="false" aria-controls="bn-pan-s">Salones${((negocio && negocio.salones) || []).length ? ' (' + negocio.salones.length + ')' : ''}</button><button type="button" role="tab" class="bn-tab" id="bn-tab-e" aria-selected="false" aria-controls="bn-pan-e" hidden>Equipo y puestos</button></div>
     <div id="bn-pan-a" role="tabpanel" aria-labelledby="bn-tab-a">
     <label class="bn-l">¿Qué actividades realizan? Elija todas las que correspondan.</label>
     <div class="bn-acts">${CAT().map((a) => `<label class="bn-act"><input type="checkbox" value="${esc(a.id)}"${sel.has(a.id) ? ' checked' : ''}><span><b>${esc(a.nombre)}</b><small>${esc(a.texto)}</small></span></label>`).join('')}</div>
@@ -106,15 +106,41 @@ function asistente(tabInicial) {
     <div id="bn-pan-s" role="tabpanel" aria-labelledby="bn-tab-s" hidden>
     <label class="bn-l" for="bn-nsal">¿Cuántos salones tiene el centro?</label>
     <p style="margin:0 0 8px">Por ejemplo: musculación y aeróbica, dos salones de aeróbica, o aeróbica y baile. Se usan para asignar cada clase a su salón y que no se superpongan.</p>
-    <div style="display:flex;gap:8px;align-items:center"><button type="button" class="bn-btn sec" id="bn-sal-menos" aria-label="Un salón menos" style="padding:10px 16px">−</button><input type="number" id="bn-nsal" min="0" max="20" inputmode="numeric" style="width:90px;text-align:center;padding:12px;border-radius:8px;border:1px solid var(--line,#2a2d33);background:var(--bg-base,#0a0a0a);color:inherit;font-size:1.1rem" value="${((negocio && negocio.salones) || []).length || 1}"><button type="button" class="bn-btn sec" id="bn-sal-mas" aria-label="Un salón más" style="padding:10px 16px">+</button></div>
+    <div style="display:flex;gap:8px;align-items:center"><button type="button" class="bn-btn sec" id="bn-sal-menos" aria-label="Un salón menos" style="padding:10px 16px">−</button><input type="number" id="bn-nsal" min="0" max="20" inputmode="numeric" style="width:90px;text-align:center;padding:12px;border-radius:8px;border:1px solid var(--line,#2a2d33);background:var(--bg-base,#0a0a0a);color:inherit;font-size:1.1rem" value="${((negocio && negocio.salones) || []).length || (negocio && !tieneClases([...sel]) ? 0 : 1)}"><button type="button" class="bn-btn sec" id="bn-sal-mas" aria-label="Un salón más" style="padding:10px 16px">+</button></div>
     <div id="bn-sal-campos" style="display:grid;gap:8px;margin-top:12px"></div></div>
+    <div id="bn-pan-e" role="tabpanel" aria-labelledby="bn-tab-e" hidden>
+    <p style="margin:0 0 8px">Para peluquería, barbería, uñas, spa, estética y consultorio: cuántos puestos de atención tiene (sillas, camillas, cabinas) y quiénes atienden. Quien reserva puede elegir con quién, o dejar «cualquiera disponible» y se le asigna a quien esté libre, sin pasarse de los puestos que tiene.</p>
+    <div id="bn-eq" style="display:grid;gap:18px"></div></div>
     <div class="bn-err" id="bn-err" role="alert"></div>
     <div class="bn-fila"><button type="submit" class="bn-btn" id="bn-ok">${primera ? 'Guardar y empezar' : 'Guardar cambios'}</button><button type="button" class="bn-btn sec" id="bn-no">${primera ? 'Más tarde' : 'Cancelar'}</button></div></form>`;
   document.body.appendChild(f); document.body.style.overflow = 'hidden';
   $('bn-nombre').focus();
   $('bn-no').onclick = cerrar; $('bn-x').onclick = cerrar;
-  const verTab = (cual) => { const sal = cual === 's'; $('bn-pan-a').hidden = sal; $('bn-pan-s').hidden = !sal; $('bn-tab-a').setAttribute('aria-selected', String(!sal)); $('bn-tab-s').setAttribute('aria-selected', String(sal)); };
-  $('bn-tab-a').onclick = () => verTab('a'); $('bn-tab-s').onclick = () => verTab('s'); $('bn-ir-sal').onclick = () => { verTab('s'); $('bn-nsal').focus(); };
+  const verTab = (cual) => { ['a', 's', 'e'].forEach((k) => { $('bn-pan-' + k).hidden = cual !== k; $('bn-tab-' + k).setAttribute('aria-selected', String(cual === k)); }); };
+  $('bn-tab-a').onclick = () => verTab('a'); $('bn-tab-s').onclick = () => verTab('s'); $('bn-tab-e').onclick = () => verTab('e');
+  // Equipo y puestos: solo para las actividades tildadas que atienden por turno en un puesto (sillas, camillas, cabinas).
+  const conPuesto = () => [...f.querySelectorAll('.bn-act input:checked')].map((i) => CAT().find((a) => a.id === i.value)).filter((a) => a && a.puesto && a.recurso);
+  const equipoD = JSON.parse(JSON.stringify((negocio && negocio.equipo) || {})), puestosD = Object.assign({}, (negocio && negocio.puestos) || {});
+  const leerEq = () => f.querySelectorAll('.bn-eqa').forEach((bl) => { puestosD[bl.dataset.a] = bl.querySelector('.bn-npu').value; equipoD[bl.dataset.a] = [...bl.querySelectorAll('.bn-nom')].map((i) => i.value); });
+  const pintarEq = (leer = true) => {
+    if (leer) leerEq();
+    const L = conPuesto(); $('bn-tab-e').hidden = !L.length;
+    if (!L.length && !$('bn-pan-e').hidden) verTab('a');
+    $('bn-eq').innerHTML = L.map((a) => { const nombres = (equipoD[a.id] && equipoD[a.id].length) ? equipoD[a.id] : ['']; return `<div class="bn-eqa" data-a="${esc(a.id)}"><h3 class="bn-sub" style="margin:0 0 6px">${esc(a.nombre)}</h3>
+      <label class="bn-l" for="bn-npu-${esc(a.id)}">¿Cuántas ${esc(a.puesto.varios)} tiene?</label>
+      <input class="bn-npu" id="bn-npu-${esc(a.id)}" type="number" min="1" max="50" inputmode="numeric" placeholder="Sin límite" value="${esc(puestosD[a.id] || '')}" style="width:120px;text-align:center;padding:12px;border-radius:8px;border:1px solid var(--line,#2a2d33);background:var(--bg-base,#0a0a0a);color:inherit;font-size:1.05rem">
+      <small style="display:block;margin-top:4px;color:var(--text-muted,#a8a396)">Si lo deja vacío, atienden a la vez tantas personas como profesionales haya. Con ${esc(puestosD[a.id] || 'N')} ${esc(a.puesto.varios)}, nunca se agendan más turnos juntos que ese número.</small>
+      <label class="bn-l">Quiénes atienden (${esc(a.recurso.nombre.toLowerCase())})</label>
+      <div style="display:grid;gap:8px">${nombres.map((n, k) => `<div class="bn-sal"><input type="text" class="bn-nom" maxlength="40" placeholder="Ej. ${['Ana', 'Luis', 'Marta', 'Sofía'][k] || 'Nombre'}" value="${esc(n)}" aria-label="Profesional ${k + 1}" style="flex:1"><button type="button" class="bn-btn sec bn-qn" data-a="${esc(a.id)}" data-k="${k}" aria-label="Quitar a ${esc(n || 'esta persona')}" style="padding:10px 14px">✕</button></div>`).join('')}</div>
+      <button type="button" class="bn-btn sec bn-mas" data-a="${esc(a.id)}" style="margin-top:8px">+ Agregar profesional</button></div>`; }).join('');
+  };
+  $('bn-eq').addEventListener('click', (e) => {
+    const b = e.target.closest('.bn-mas,.bn-qn'); if (!b) return; leerEq(); const id = b.dataset.a; equipoD[id] = equipoD[id] && equipoD[id].length ? equipoD[id] : [''];
+    if (b.classList.contains('bn-mas')) equipoD[id].push(''); else equipoD[id].splice(Number(b.dataset.k), 1);
+    pintarEq(false); if (b.classList.contains('bn-mas')) { const ins = $('bn-eq').querySelectorAll(`.bn-eqa[data-a="${id}"] .bn-nom`); if (ins.length) ins[ins.length - 1].focus(); }
+  });
+  f.querySelector('.bn-acts').addEventListener('change', () => pintarEq());
+  pintarEq(false); $('bn-ir-sal').onclick = () => { verTab('s'); $('bn-nsal').focus(); };
   let nombresSal = ((negocio && negocio.salones) || []).slice();
   const offIni = new Set(((negocio && negocio.salones_off) || []).map((x) => x.toLowerCase()));
   let habSal = nombresSal.map((n) => !offIni.has(String(n).toLowerCase()));
@@ -128,6 +154,7 @@ function asistente(tabInicial) {
   $('bn-sal-mas').onclick = () => { $('bn-nsal').value = Math.min(20, (Number($('bn-nsal').value) || 0) + 1); camposSal(); };
   camposSal();
   if (tabInicial === 's') verTab('s');
+  if (tabInicial === 'e' && !$('bn-tab-e').hidden) verTab('e');
   let logoNuevo = (negocio && negocio.logo) || '';
   const prevLogo = () => { $('bn-logo-prev').innerHTML = logoNuevo ? `<img src="${esc(logoNuevo)}" alt="Logo">` : '<span>Sin logo</span>'; $('bn-logo-quitar').hidden = !logoNuevo; };
   $('bn-logo-quitar').onclick = () => { logoNuevo = ''; $('bn-logo').value = ''; prevLogo(); };
@@ -148,14 +175,22 @@ function asistente(tabInicial) {
     const salones_off = salones.filter((x, k) => !filasSal[k].querySelector('input[type=checkbox]').checked);
     const repetido = salones.find((x, k) => salones.findIndex((y) => y.toLowerCase() === x.toLowerCase()) !== k);
     if (repetido) { verTab('s'); return err(`Hay dos salones con el nombre «${repetido}». Póngales nombres distintos (por ejemplo, Aeróbica 1 y Aeróbica 2).`); }
+    leerEq();
+    const equipo = {}, puestos = {};
+    for (const a of conPuesto()) {
+      const nombres = []; (equipoD[a.id] || []).forEach((n) => { const t = String(n).trim(); if (t) nombres.push(t); });
+      const rep = nombres.find((x, k) => nombres.findIndex((y) => y.toLowerCase() === x.toLowerCase()) !== k);
+      if (rep) { verTab('e'); return err(`En ${a.nombre} hay dos personas con el nombre «${rep}». Póngales nombres distintos (por ejemplo, Ana M. y Ana R.).`); }
+      equipo[a.id] = nombres; const n = Math.floor(Number(puestosD[a.id])); puestos[a.id] = n > 0 ? Math.min(n, 50) : 0;
+    }
     $('bn-ok').disabled = true; $('bn-ok').textContent = 'Guardando…';
     try {
-      const datos = { nombre: nom, telefono: tel, actividades: acts, salones, salones_off, logo: logoNuevo || '', version_catalogo: (window.DOMINO_CATALOGO || {}).version || 1, actualizado: serverTimestamp() };
+      const datos = { nombre: nom, telefono: tel, actividades: acts, salones, salones_off, equipo: Object.assign({}, (negocio && negocio.equipo) || {}, equipo), puestos: Object.assign({}, (negocio && negocio.puestos) || {}, puestos), logo: logoNuevo || '', version_catalogo: (window.DOMINO_CATALOGO || {}).version || 1, actualizado: serverTimestamp() };
       if (!negocio) datos.creado = serverTimestamp();
       await setDoc(doc(D().db, 'config', 'negocio'), datos, { merge: true });
       negocio = Object.assign({}, negocio, datos); window.DOMINO_NEGOCIO = negocio;
       // La agenda de turnos del centro se arma sola con las actividades elegidas (recursos, servicios y horarios típicos; no pisa lo ya cargado).
-      if (window.TURNOS_API) apiAgenda('sincronizar_actividades', { actividades: acts, nombre: nom, telefono: tel }).then((r) => { if (!r.ok) console.warn('Agenda: no se pudieron cargar las actividades', r.error); }).catch(() => {});
+      if (window.TURNOS_API) apiAgenda('sincronizar_actividades', { actividades: acts, nombre: nom, telefono: tel, equipo, puestos }).then((r) => { if (!r.ok) console.warn('Agenda: no se pudieron cargar las actividades', r.error); }).catch(() => {});
       cerrar(); pintarPanel(true); aplicarLogo(); if (nom) document.querySelectorAll('.brand-name b').forEach((el) => { el.textContent = nom; });
     } catch (e) { console.error(e); $('bn-ok').disabled = false; $('bn-ok').textContent = 'Guardar'; err('No se pudo guardar. Revise su conexión e intente de nuevo.'); }
   };
@@ -174,10 +209,12 @@ function pintarPanel(abrirPasos) {
   } else {
     const acts = negocio.actividades || [];
     p.innerHTML = `<h2>${esc(negocio.nombre)}</h2><div class="bn-chips">${acts.map((a) => `<span class="bn-chip">${esc(nombreActividad(a))}</span>`).join('')}</div>${(negocio.salones || []).length ? `<p style="margin:10px 0 0;color:var(--text-muted)">Salones: ${negocio.salones.map((n) => salonCerrado(n) ? `<s>${esc(n)}</s> (inhabilitado)` : esc(n)).join(' · ')}</p>` : ''}
-    ${senior ? `<div class="bn-fila"><button type="button" class="bn-btn sec" id="bn-abrir">Actividades</button><button type="button" class="bn-btn sec" id="bn-salones">Salones</button>${tieneClases(acts) ? '<button type="button" class="bn-btn sec" id="bn-clases-adm">Administrar clases</button>' : ''}</div>` : ''}`;
+    ${resumenEquipo(acts)}
+    ${senior ? `<div class="bn-fila"><button type="button" class="bn-btn sec" id="bn-abrir">Actividades</button><button type="button" class="bn-btn sec" id="bn-salones">Salones</button>${conPuestos(acts) ? '<button type="button" class="bn-btn sec" id="bn-equipo">Equipo y puestos</button>' : ''}${tieneClases(acts) ? '<button type="button" class="bn-btn sec" id="bn-clases-adm">Administrar clases</button>' : ''}</div>` : ''}`;
   }
   const a = $('bn-abrir'); if (a) a.onclick = () => asistente();
   const sl = $('bn-salones'); if (sl) sl.onclick = () => asistente('s');
+  const eq = $('bn-equipo'); if (eq) eq.onclick = () => asistente('e');
   const ac = $('bn-clases-adm'); if (ac) ac.onclick = () => adminClases();
 }
 
@@ -202,7 +239,7 @@ const hoyStr = () => { const d = new Date(); return `${d.getFullYear()}-${String
 const diasHasta = (s) => Math.round((new Date(s + 'T12:00:00') - new Date(hoyStr() + 'T12:00:00')) / 86400000);
 const dmy = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '') ? s.split('-').reverse().join('/') : '';
 const fechaLarga = (s) => { const t = new Date(s + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }); return t.charAt(0).toUpperCase() + t.slice(1); };
-let socios = null, clases = null, clasesErr = '';
+let socios = null, clases = null, clasesErr = '', puestosHoy = [];
 
 function estilosHub() {
   if ($('bn-css-hub')) return;
@@ -241,7 +278,7 @@ const porVencer = (campo, dias) => (socios || []).filter((x) => /^\d{4}-\d{2}-\d
 async function leerClases() {
   if (!window.TURNOS_API) { clases = null; clasesErr = 'sin_conexion_planilla'; return; }
   const r = await llamar('clases_dias', { dias: 4 });
-  if (r && r.ok) { clases = r.clases; clasesErr = ''; return; }
+  if (r && r.ok) { clases = r.clases; puestosHoy = Array.isArray(r.puestos) ? r.puestos : []; clasesErr = ''; return; }
   if (r && r.error === 'accion_desconocida') {
     // Script anterior: se arma con los horarios libres públicos (solo muestra clases con lugar).
     const i = await llamar('inicio');
@@ -290,17 +327,21 @@ function pintarClases() {
   estilosHub();
   const lista = $('hub-lista-hoy'); if (!lista) return;
   let box = $('bn-clases'); if (!box) { box = document.createElement('div'); box.id = 'bn-clases'; box.className = 'bn-clases'; lista.parentNode.insertBefore(box, lista); }
-  const h2 = document.querySelector('.hub-hoy-head h2'); if (h2) h2.textContent = 'Clases de hoy y los próximos días';
+  const soloPuestos = puestosHoy.length && !tieneClases((negocio && negocio.actividades) || []);
+  const h2 = document.querySelector('.hub-hoy-head h2'); if (h2) h2.textContent = soloPuestos ? 'Puestos de atención ahora' : 'Clases de hoy y los próximos días';
+  const pu = puestosHoy.map((p) => { const lleno = p.libres <= 0; return `<div class="bn-cl${lleno ? ' lleno' : p.libres === 1 ? ' pocos' : ''}"><span class="h" aria-hidden="true">${p.libres}/${p.total}</span><span><b>${esc(p.nombre)}</b><small>${p.profesionales} ${p.profesionales === 1 ? 'profesional' : 'profesionales'}</small></span><span class="bn-cupo">${lleno ? `${esc(p.varios)} ocupadas` : `${p.libres} de ${p.total} ${esc(p.varios)} libres`}${lleno ? '' : '<small>ahora</small>'}</span></div>`; }).join('');
+  const bloquePu = pu ? `<div class="bn-dia"><h3>${soloPuestos ? 'Ahora' : 'Puestos de atención ahora'}</h3><div class="bn-cls">${pu}</div></div>` : '';
+  if (soloPuestos && clases && !clases.length) { box.innerHTML = bloquePu; return; }
   if (!clases) {
-    box.innerHTML = clasesErr === 'sin_conexion_planilla'
+    box.innerHTML = bloquePu + (clasesErr === 'sin_conexion_planilla'
       ? '<p class="bn-aviso">Las clases aparecen acá cuando la agenda de turnos está conectada.</p>'
-      : clasesErr ? '<p class="bn-aviso">No se pudieron traer las clases. Revise su conexión e intente de nuevo.</p>' : '<p class="bn-aviso">Cargando clases…</p>';
+      : clasesErr ? '<p class="bn-aviso">No se pudieron traer las clases. Revise su conexión e intente de nuevo.</p>' : '<p class="bn-aviso">Cargando clases…</p>');
     return;
   }
   const visibles = clases.filter((c) => !(c.fecha === hoyStr() && c.pasada));
-  if (!visibles.length) { box.innerHTML = '<p class="bn-aviso">No hay clases cargadas para estos días.</p>'; return; }
+  if (!visibles.length) { box.innerHTML = bloquePu + '<p class="bn-aviso">No hay clases cargadas para estos días.</p>'; return; }
   const dias = [...new Set(visibles.map((c) => c.fecha))];
-  box.innerHTML = dias.map((f) => `<div class="bn-dia"><h3>${f === hoyStr() ? 'Hoy' : esc(fechaLarga(f))}</h3><div class="bn-cls">${visibles.filter((c) => c.fecha === f).map((c) => {
+  box.innerHTML = bloquePu + dias.map((f) => `<div class="bn-dia"><h3>${f === hoyStr() ? 'Hoy' : esc(fechaLarga(f))}</h3><div class="bn-cls">${visibles.filter((c) => c.fecha === f).map((c) => {
     const lleno = c.libres <= 0, pocos = !lleno && c.libres <= Math.max(2, Math.ceil(c.cupo * 0.2));
     if (salonCerrado(c.sala)) c.suspendida = true;
     const estado = salonCerrado(c.sala) ? 'Salón inhabilitado' : c.suspendida ? 'Suspendida' : lleno ? 'Completa' : `${c.libres} de ${c.cupo}`;
@@ -371,6 +412,14 @@ const DIAS = [[1, 'Lun'], [2, 'Mar'], [3, 'Mié'], [4, 'Jue'], [5, 'Vie'], [6, '
 const nomDia = (d) => (DIAS.find((x) => x[0] === d) || [0, '?'])[1];
 const salonCerrado = (n) => ((negocio && negocio.salones_off) || []).some((x) => String(x).toLowerCase() === String(n || '').toLowerCase());
 const salonesCentro = () => ((negocio && negocio.salones) || []).filter((n) => n && !salonCerrado(n));
+const conPuestos = (acts) => (acts || []).some((id) => { const a = CAT().find((x) => x.id === id); return a && a.puesto && a.recurso; });
+const resumenEquipo = (acts) => {
+  const filas = (acts || []).map((id) => CAT().find((x) => x.id === id)).filter((a) => a && a.puesto && a.recurso).map((a) => {
+    const n = Number((negocio.puestos || {})[a.id]) || 0, eq = ((negocio.equipo || {})[a.id] || []).filter(Boolean);
+    return `${esc(a.nombre)}: ${n ? n + ' ' + esc(n === 1 ? a.puesto.uno : a.puesto.varios) : 'sin límite de ' + esc(a.puesto.varios)}${eq.length ? ' · ' + eq.map(esc).join(', ') : ''}`;
+  });
+  return filas.length ? `<p style="margin:10px 0 0;color:var(--text-muted)">${filas.join('<br>')}</p>` : '';
+};
 const tieneClases = (acts) => (acts || []).some((id) => ((CAT().find((a) => a.id === id) || {}).clases || []).length);
 const ERR_CLASE = { cupo_invalido: 'El cupo tiene que ser de 2 a 500 personas.', duracion_invalida: 'Elija una duración de la lista.', horario_invalido: 'Revise los horarios: elija al menos un día y la hora de inicio.', faltan_horarios: 'Agregue al menos un día y horario.', falta_nombre_clase: 'Escriba el nombre de la clase.', sin_permiso: 'Su usuario de la agenda no tiene permiso para cambiar clases (lo hace la Dirección).', usuario_invalido: 'Ese correo no está habilitado en la agenda.', clave_incorrecta: 'La clave no es correcta.', demasiados_intentos: 'Demasiados intentos. Espere unos minutos.', servicio_invalido: 'Esa clase ya no existe. Actualice la lista.', accion_desconocida: 'La agenda todavía usa el script anterior: falta implementar el Code.gs nuevo como «Nueva versión».', tiempo_agotado: 'La agenda tarda en responder. Intente de nuevo.', sin_conexion: 'No hay conexión con la agenda. Revise su internet e intente de nuevo.' };
 const errClase = (e) => ERR_CLASE[e] || 'No se pudo completar (' + (e || 'error') + '). Intente de nuevo.';
