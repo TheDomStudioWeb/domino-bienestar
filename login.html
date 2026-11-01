@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
+    <script src="demo/boot.js"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Ingresar | DOMino Bienestar</title>
     <link rel="stylesheet" href="style.css">
@@ -45,10 +46,26 @@
 </p>
             </div>
 
+
+        <div class="upload-card" id="demo-caja" style="display:none;margin-top:20px;text-align:center">
+            <h3 style="margin-bottom:6px">Probar la demostración</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 14px;">Sin cuenta, con datos inventados de un centro de bienestar de ejemplo. Elija con qué nivel recorrerla.</p>
+            <div style="display:grid;gap:8px">
+                <button type="button" class="btn-primary" data-demo="direccion@demo.com">Entrar como Dirección</button>
+                <button type="button" class="btn-primary" data-demo="profesor@demo.com" style="opacity:.9">Entrar como Profesor/a</button>
+                <button type="button" class="btn-primary" data-demo="recepcion@demo.com" style="opacity:.8">Entrar como Recepción</button>
+            </div>
+        </div>
+
         <p style="text-align: center; color: var(--text-muted); font-size: 0.75rem; margin-top: 20px;">
             DOMino © 2026 · The DOM Studio Web
         </p>
     </div>
     <script type="module" src="login.js"></script>
+    <script>
+    // La demostración solo se muestra con ?demo en la dirección (los clientes reales no la ven).
+    if (/[?&]demo\b/.test(location.search)) document.getElementById('demo-caja').style.display = 'block';
+    document.querySelectorAll('[data-demo]').forEach(function (b) { b.addEventListener('click', function () { window.DOMINO_DEMO.entrar(b.dataset.demo); location.href = 'index.html'; }); });
+    </script>
 </body>
 </html>
