@@ -224,7 +224,10 @@ function despachar_(p) {
   if (a === 'sesion_fb') return sesionFb_(p);
   if (p.negocio && !p.token) usarNegocio_(p.negocio); // reserva pública, portal: el centro viene en el pedido
   const PUB = { inicio: inicio_, clases_dias: clasesDias_, config_publica: configPublica_, horarios_libres: horariosLibres_, reservar: reservar_, ver_turno: verTurno_, cancelar_turno: cancelarTurno_ };
-  if (PUB[a]) return PUB[a](p);
+  if (PUB[a]) { // el panel del personal también usa horarios_libres, pero con su sesión: el centro sale de la sesión (si no, se leía la planilla general y el servicio «no estaba disponible»)
+    if (p.token && !validarToken_(p.token) && p.negocio) usarNegocio_(p.negocio);
+    return PUB[a](p);
+  }
   if (a === 'login') { if (p.negocio) usarNegocio_(p.negocio); return login_(p.email, p.clave); }
   const u = validarToken_(p.token);
   if (!u) return { ok: false, error: 'sesion_invalida' };

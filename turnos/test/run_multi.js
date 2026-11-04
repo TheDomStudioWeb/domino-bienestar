@@ -52,6 +52,14 @@ T('una reserva pública cae en la planilla de SU centro y el otro no la ve', () 
   assert.strictEqual(m.llamar({ accion: 'agenda', token: s2.token, desde: '2026-10-26', hasta: '2026-10-30' }).turnos.length, 0, 'el centro 2 no ve el turno del 1');
   assert.strictEqual(m.llamar({ accion: 'agenda', token: s1.token, desde: '2026-10-26', hasta: '2026-10-30' }).turnos.length, 1);
 });
+T('el panel del personal (con sesión) ve los horarios libres de SU centro, no los de la planilla general', () => {
+  const { m, s1 } = dosCentros(); const l1 = m.libros.negocios.find(f => f[0] === 'gym-uno')[1]; preparar(m, l1);
+  m.extra[l1].servicios.forEach((r, i) => { if (i && r[0] === 'S1') r[0] = 'SX1'; }); // servicio que existe solo en la planilla del centro 1
+  const lib = (o) => m.llamar(Object.assign({ accion: 'horarios_libres', servicio_id: 'SX1', recurso_id: 'R1', desde: '2026-10-27', dias: 1 }, o));
+  assert(lib({ token: s1.token, negocio: 'gym-uno' }).ok, 'con sesión y centro');
+  assert(lib({ token: s1.token }).ok, 'con sesión y sin centro en el pedido');
+  assert(lib({ token: 'invalido.x', negocio: 'gym-uno' }).ok, 'sesión inválida: cae al centro del pedido');
+});
 T('el mismo horario puede reservarse en dos centros (no se pisan)', () => {
   const { m } = dosCentros(); const l1 = m.libros.negocios.find(f => f[0] === 'gym-uno')[1], l2 = m.libros.negocios.find(f => f[0] === 'gym-dos')[1]; preparar(m, l1); preparar(m, l2);
   assert(reservar(m, 'gym-uno').ok); assert(reservar(m, 'gym-dos', { tel: '2615552222' }).ok); assert.strictEqual(reservar(m, 'gym-uno', { tel: '2615553333' }).error, 'horario_ocupado');
