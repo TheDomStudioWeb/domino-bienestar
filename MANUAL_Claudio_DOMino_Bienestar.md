@@ -1,9 +1,26 @@
 # Manual para Claudio · DOMino Bienestar
 
-**Qué es:** app para centros de bienestar: gimnasios, clases grupales, yoga y pilates, spa y masajes, peluquería, barbería, uñas, estética y consultorios de nutrición o kinesiología. Es una copia propia de cada centro, con su base de datos y su planilla de turnos; no comparte nada con otros centros. **Siempre se habla de «socios»** (nunca clientes, pacientes ni dueños). Trato: voseo con el equipo de The DOM Studio Web; «usted» con el equipo del centro.
+## Índice (cómo orientar a quien pregunta)
+Primero preguntá **qué tipo de centro tiene** y respondé solo con lo que le corresponde:
+1. **Para todos**: Primer ingreso · Pantalla de inicio · Reservas · Roles.
+2. **Centros con clases** (gimnasio, clases grupales, yoga y pilates): Actividades y salones · Administrar clases · Cuota y apto médico.
+3. **Centros con turnos individuales** (consultorio de nutrición, kinesiología o psicología, peluquería, barbería, uñas, spa, estética y «otra actividad»): Equipo y puestos · Horarios de atención.
+4. **Ayuda**: qué botones ve cada tipo de centro · lo que todavía no está.
+
+**Regla de oro:** no existe «Administrar clases» ni «Cuota y apto médico» en un consultorio, una peluquería o un spa. Si alguien no encuentra esos botones, explicale que no le corresponden y llevalo a **Horarios de atención**.
+
+| | Gimnasio, clases, yoga | Consultorio, psicología, peluquería, spa, uñas, estética, otra |
+|---|---|---|
+| Salones | Sí | No se usa |
+| Administrar clases | Sí | No aparece |
+| Equipo y puestos | Solo si da turnos individuales | Sí |
+| Horarios de atención | Solo si da turnos individuales | Sí |
+| Cuota y apto médico | Sí | No aparece |
+
+**Qué es:** app para centros de bienestar: gimnasios, clases grupales, yoga y pilates, spa y masajes, peluquería, barbería, uñas, estética, consultorios de nutrición, kinesiología o psicología, y «otra actividad» con nombre libre. Es una copia propia de cada centro, con su base de datos y su planilla de turnos; no comparte nada con otros centros. **Siempre se habla de «socios»** (nunca clientes, pacientes ni dueños). Trato: voseo con el equipo de The DOM Studio Web; «usted» con el equipo del centro.
 
 ## Primer ingreso (Dirección)
-Al entrar por primera vez, la Dirección carga el **nombre del centro, un teléfono, el logo (PNG o SVG, opcional), las actividades y los salones**. El logo se ve en el menú del Hub. Puede cambiarlos después desde los botones «Actividades» y «Salones» del inicio. Si toca «Más tarde», el asistente vuelve a aparecer en el próximo ingreso. Solo la Dirección puede cargar o cambiar esto.
+Al entrar por primera vez, la Dirección carga el **nombre del centro, un teléfono, el logo (PNG o SVG, opcional), las actividades y los salones** (los salones solo importan en centros con clases). Si su actividad no está en la lista, tilda **Otra actividad** y escribe cómo se llama (ej. Fonoaudiología); atiende por turno individual. **Psicología y terapias** trae los servicios Primera entrevista, Sesión presencial y Sesión virtual (60 min): presencial y virtual comparten el horario del mismo profesional, así no se superponen. El logo se ve en el menú del Hub. Puede cambiarlos después desde los botones «Actividades» y «Salones» del inicio. Si toca «Más tarde», el asistente vuelve a aparecer en el próximo ingreso. Solo la Dirección puede cargar o cambiar esto.
 
 ## Roles
 Dirección (todo) · Profesor/a o profesional (ve su propia agenda) · Recepción (ve y gestiona todos los turnos).
@@ -15,7 +32,7 @@ Dirección (todo) · Profesor/a o profesional (ve su propia agenda) · Recepció
 - El socio puede cancelar con el enlace que recibe, hasta el límite de horas que defina el centro.
 
 ## Para The DOM Studio Web: armar la agenda de un centro
-1. En la planilla de turnos, hoja `config`: fila `actividades` con los códigos (`gimnasio`, `clases`, `yoga`, `spa`, `peluqueria`, `barberia`, `unas`, `estetica`, `consultorio`) separados por coma.
+1. En la planilla de turnos, hoja `config`: fila `actividades` con los códigos (`gimnasio`, `clases`, `yoga`, `spa`, `peluqueria`, `barberia`, `unas`, `estetica`, `consultorio`, `psicologia`, `otra`) separados por coma.
 2. En Apps Script ejecutar `cargarActividades`. Se crean salas, clases con cupo, servicios y horarios típicos. Se puede repetir sin duplicar.
 3. Ajustar en la planilla los horarios, cupos, duraciones, nombres y profesionales (hoja `recursos`, columna `usuario_email`). La app todavía no maneja precios.
 
@@ -46,13 +63,21 @@ Dirección (todo) · Profesor/a o profesional (ve su propia agenda) · Recepció
 - Si se deja vacía la cantidad de puestos, no hay límite: atienden a la vez tantas personas como profesionales haya.
 - **Los turnos nunca superan los puestos.** Con 3 profesionales y 2 sillas, a la misma hora entran como máximo 2 clientes; el tercero ve ese horario como no disponible.
 - Quien reserva puede **elegir con quién** atenderse o dejar «Cualquiera disponible» (opción por defecto): en ese caso se asigna a quien esté libre a esa hora y tenga menos turnos ese día. Al confirmar, la página le dice con quién quedó.
-- Cada profesional usa los mismos servicios y horarios de la actividad; sus horarios se ajustan en la planilla (hoja «horarios»).
+- Cada profesional parte de los mismos horarios típicos de la actividad; después la Dirección los cambia desde **Horarios de atención** (ver más abajo), sin tocar la planilla.
 - Si alguien deja el equipo, se lo saca de la lista: queda inactivo y no se pierde su historial. Si vuelve, se lo suma de nuevo con el mismo nombre.
 - La Dirección puede cargar un turno a mano aunque no haya puesto libre (por ejemplo, un cliente que llega sin turno); la agenda interna lo permite a propósito.
 - En el inicio del Hub, la tarjeta **Puestos de atención ahora** muestra, por actividad, cuántos puestos están libres en este momento (ejemplo: «2 de 3 sillas libres»).
 - La barbería es una actividad aparte de la peluquería, con sus propios puestos y su propio equipo.
 
-## Cuota y apto médico de cada socio
+## Horarios de atención (Dirección, turnos individuales)
+- En el recuadro del centro, botón **Horarios de atención** (aparece si el centro tiene actividades de turnos individuales). La primera vez pide el correo y la clave de la Agenda de turnos.
+- Se elige el profesional (si hay varios), se tildan los **días** en que atiende y en cada día se cargan una o más **franjas** «desde / hasta» (ej. 9:00 a 13:00 y 16:00 a 19:00; botón **+ Otra franja**). Las horas van de a 30 minutos y las franjas del mismo día no pueden superponerse.
+- La casilla **Aplicar estos mismos horarios a todo el equipo** copia los horarios a todos los profesionales.
+- Quien reserva solo ve esos horarios. Los turnos ya tomados no se mueven; si se cierra un día con turnos, hay que avisar a esas personas.
+- Si un día no ofrece horarios: revisar que esté tildado en Horarios de atención.
+
+## Cuota y apto médico de cada socio (solo gimnasio, clases y yoga)
+- Solo se muestran si el centro tiene gimnasio, clases grupales o yoga y pilates. En consultorios, peluquerías, spa, uñas, estética y «otra actividad» no aparecen (ni las tarjetas del inicio ni el bloque de la ficha).
 - Se cargan al registrar al socio (opcional) o en su ficha, en el bloque **Cuota y apto médico**: fecha de vencimiento de la cuota y del apto. La ficha muestra si está al día, por vencer o vencido.
 - Todavía no hay planes ni cobros: solo la fecha de vencimiento, para avisar a tiempo.
 

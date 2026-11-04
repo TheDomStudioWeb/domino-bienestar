@@ -38,7 +38,7 @@ const icono = (k) => `<svg viewBox="0 0 24 24" width="26" height="26" fill="none
 const GRUPOS = [
   { titulo: 'Gestión del centro', items: [
     { k: 'expedientes', t: 'Socios', d: 'Fichas de socios, con su contacto, sus turnos y sus seguimientos. Desde acá también se da de alta o baja a un socio.', roles: ['senior', 'midsenior'], go: () => navegarA('expedientes') },
-    { k: 'kanban', t: 'Seguimientos', d: 'Cuotas por vencer, aptos médicos y pendientes con los socios, por estado.', roles: ['senior', 'midsenior'], go: () => navegarA('kanban') },
+    { k: 'kanban', t: 'Seguimientos', d: 'Pendientes y avisos con los socios, por estado (en gimnasios, también cuotas y aptos médicos).', roles: ['senior', 'midsenior'], go: () => navegarA('kanban') },
     { k: 'tareas', t: 'Mis Tareas', d: 'Lo que tenés asignado, por estado.', roles: ['asistente'], go: () => navegarA('mis-tareas') }
   ]},
   { titulo: 'Documentos', items: [

@@ -512,6 +512,98 @@
         "uno": "consultorio",
         "varios": "consultorios"
       }
+    },
+    {
+      "id": "psicologia",
+      "nombre": "Psicología y terapias",
+      "texto": "Consultorio de psicología, terapias y acompañamiento, con sesiones presenciales y virtuales.",
+      "persona": "paciente",
+      "recurso": {
+        "nombre": "Profesional",
+        "tipo": "profesional"
+      },
+      "servicios": [
+        {
+          "nombre": "Primera entrevista",
+          "duracion_min": 60
+        },
+        {
+          "nombre": "Sesión presencial",
+          "duracion_min": 60
+        },
+        {
+          "nombre": "Sesión virtual",
+          "duracion_min": 60
+        }
+      ],
+      "horarios": [
+        {
+          "dias": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "desde": "09:00",
+          "hasta": "13:00"
+        },
+        {
+          "dias": [
+            1,
+            3,
+            5
+          ],
+          "desde": "16:00",
+          "hasta": "19:00"
+        }
+      ],
+      "puesto": {
+        "uno": "consultorio",
+        "varios": "consultorios"
+      }
+    },
+    {
+      "id": "otra",
+      "nombre": "Otra actividad",
+      "texto": "Si su actividad no figura en la lista, elíjala y escriba cómo se llama. Atiende por turno individual.",
+      "persona": "cliente",
+      "recurso": {
+        "nombre": "Profesional",
+        "tipo": "profesional"
+      },
+      "servicios": [
+        {
+          "nombre": "Consulta o sesión",
+          "duracion_min": 60
+        }
+      ],
+      "horarios": [
+        {
+          "dias": [
+            1,
+            2,
+            3,
+            4,
+            5
+          ],
+          "desde": "09:00",
+          "hasta": "13:00"
+        },
+        {
+          "dias": [
+            1,
+            3,
+            5
+          ],
+          "desde": "16:00",
+          "hasta": "19:00"
+        }
+      ],
+      "puesto": {
+        "uno": "puesto",
+        "varios": "puestos"
+      }
     }
   ]
 }

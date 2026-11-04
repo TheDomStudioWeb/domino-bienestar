@@ -17,7 +17,7 @@ async function leerNegocio() {
   catch (e) { console.warn('Bienestar: no se pudo leer config/negocio', e); negocio = null; cargado = false; }
   window.DOMINO_NEGOCIO = negocio;
 }
-const nombreActividad = (id) => (CAT().find((a) => a.id === id) || { nombre: id }).nombre;
+const nombreActividad = (id) => (id === 'otra' && negocio && negocio.otra_nombre) ? negocio.otra_nombre : (CAT().find((a) => a.id === id) || { nombre: id }).nombre;
 const nombreInicial = () => { const n = (window.DOMINO_CLIENTE && window.DOMINO_CLIENTE.nombre) || ''; return /\(demo\)/i.test(n) ? '' : n; };
 const lineaPlanilla = (ids) => 'actividades = ' + ids.join(',');
 
@@ -102,6 +102,7 @@ function asistente(tabInicial) {
     <div id="bn-pan-a" role="tabpanel" aria-labelledby="bn-tab-a">
     <label class="bn-l">¿Qué actividades realizan? Elija todas las que correspondan.</label>
     <div class="bn-acts">${CAT().map((a) => `<label class="bn-act"><input type="checkbox" value="${esc(a.id)}"${sel.has(a.id) ? ' checked' : ''}><span><b>${esc(a.nombre)}</b><small>${esc(a.texto)}</small></span></label>`).join('')}</div>
+    <div id="bn-otra" hidden><label class="bn-l" for="bn-otra-n">¿Cómo se llama su actividad?</label><input type="text" id="bn-otra-n" maxlength="50" placeholder="Ej. Fonoaudiología" value="${esc((negocio && negocio.otra_nombre) || '')}"><small style="display:block;margin-top:4px;color:var(--text-muted,#a8a396)">Atiende por turno individual: usted define los horarios y quiénes atienden.</small></div>
     <button type="button" class="bn-btn sec" id="bn-ir-sal" style="margin-top:12px">Siguiente: salones →</button></div>
     <div id="bn-pan-s" role="tabpanel" aria-labelledby="bn-tab-s" hidden>
     <label class="bn-l" for="bn-nsal">¿Cuántos salones tiene el centro?</label>
@@ -139,7 +140,8 @@ function asistente(tabInicial) {
     if (b.classList.contains('bn-mas')) equipoD[id].push(''); else equipoD[id].splice(Number(b.dataset.k), 1);
     pintarEq(false); if (b.classList.contains('bn-mas')) { const ins = $('bn-eq').querySelectorAll(`.bn-eqa[data-a="${id}"] .bn-nom`); if (ins.length) ins[ins.length - 1].focus(); }
   });
-  f.querySelector('.bn-acts').addEventListener('change', () => pintarEq());
+  const verOtra = () => { const on = !!f.querySelector('.bn-act input[value="otra"]:checked'); $('bn-otra').hidden = !on; };
+  f.querySelector('.bn-acts').addEventListener('change', () => { pintarEq(); verOtra(); }); verOtra();
   pintarEq(false); $('bn-ir-sal').onclick = () => { verTab('s'); $('bn-nsal').focus(); };
   let nombresSal = ((negocio && negocio.salones) || []).slice();
   const offIni = new Set(((negocio && negocio.salones_off) || []).map((x) => x.toLowerCase()));
@@ -170,6 +172,8 @@ function asistente(tabInicial) {
     const err = (m) => { $('bn-err').textContent = m; };
     if (nom.length < 3) return err('Escriba el nombre del centro.');
     if (!acts.length) { verTab('a'); return err('Elija al menos una actividad.'); }
+    const otraN = ($('bn-otra-n').value || '').trim();
+    if (acts.includes('otra') && otraN.length < 3) { verTab('a'); $('bn-otra-n').focus(); return err('Escriba cómo se llama su actividad.'); }
     const filasSal = [...$('bn-sal-campos').querySelectorAll('.bn-sal')];
     const salones = filasSal.map((r, k) => r.querySelector('input[type=text]').value.trim() || 'Salón ' + (k + 1));
     const salones_off = salones.filter((x, k) => !filasSal[k].querySelector('input[type=checkbox]').checked);
@@ -185,7 +189,7 @@ function asistente(tabInicial) {
     }
     $('bn-ok').disabled = true; $('bn-ok').textContent = 'Guardando…';
     try {
-      const datos = { nombre: nom, telefono: tel, actividades: acts, salones, salones_off, equipo: Object.assign({}, (negocio && negocio.equipo) || {}, equipo), puestos: Object.assign({}, (negocio && negocio.puestos) || {}, puestos), logo: logoNuevo || '', version_catalogo: (window.DOMINO_CATALOGO || {}).version || 1, actualizado: serverTimestamp() };
+      const datos = { nombre: nom, telefono: tel, actividades: acts, otra_nombre: acts.includes('otra') ? otraN : '', salones, salones_off, equipo: Object.assign({}, (negocio && negocio.equipo) || {}, equipo), puestos: Object.assign({}, (negocio && negocio.puestos) || {}, puestos), logo: logoNuevo || '', version_catalogo: (window.DOMINO_CATALOGO || {}).version || 1, actualizado: serverTimestamp() };
       if (!negocio) datos.creado = serverTimestamp();
       await setDoc(doc(D().db, 'config', 'negocio'), datos, { merge: true });
       negocio = Object.assign({}, negocio, datos); window.DOMINO_NEGOCIO = negocio;
@@ -210,12 +214,13 @@ function pintarPanel(abrirPasos) {
     const acts = negocio.actividades || [];
     p.innerHTML = `<h2>${esc(negocio.nombre)}</h2><div class="bn-chips">${acts.map((a) => `<span class="bn-chip">${esc(nombreActividad(a))}</span>`).join('')}</div>${(negocio.salones || []).length ? `<p style="margin:10px 0 0;color:var(--text-muted)">Salones: ${negocio.salones.map((n) => salonCerrado(n) ? `<s>${esc(n)}</s> (inhabilitado)` : esc(n)).join(' · ')}</p>` : ''}
     ${resumenEquipo(acts)}
-    ${senior ? `<div class="bn-fila"><button type="button" class="bn-btn sec" id="bn-abrir">Actividades</button><button type="button" class="bn-btn sec" id="bn-salones">Salones</button>${conPuestos(acts) ? '<button type="button" class="bn-btn sec" id="bn-equipo">Equipo y puestos</button>' : ''}${tieneClases(acts) ? '<button type="button" class="bn-btn sec" id="bn-clases-adm">Administrar clases</button>' : ''}</div>` : ''}`;
+    ${senior ? `<div class="bn-fila"><button type="button" class="bn-btn sec" id="bn-abrir">Actividades</button><button type="button" class="bn-btn sec" id="bn-salones">Salones</button>${conPuestos(acts) ? '<button type="button" class="bn-btn sec" id="bn-equipo">Equipo y puestos</button>' : ''}${conPuestos(acts) ? '<button type="button" class="bn-btn sec" id="bn-horarios">Horarios de atención</button>' : ''}${tieneClases(acts) ? '<button type="button" class="bn-btn sec" id="bn-clases-adm">Administrar clases</button>' : ''}</div>` : ''}`;
   }
   const a = $('bn-abrir'); if (a) a.onclick = () => asistente();
   const sl = $('bn-salones'); if (sl) sl.onclick = () => asistente('s');
   const eq = $('bn-equipo'); if (eq) eq.onclick = () => asistente('e');
   const ac = $('bn-clases-adm'); if (ac) ac.onclick = () => adminClases();
+  const ah = $('bn-horarios'); if (ah) ah.onclick = () => adminHorarios();
 }
 
 async function iniciar() {
@@ -308,6 +313,9 @@ window.bnVerCuotas = () => listaModal('Cuotas vencidas o por vencer', porVencer(
 window.bnVerAptos = () => listaModal('Aptos médicos vencidos o por vencer', porVencer('apto_vence', AVISO_APTO_DIAS).map((x) => ({ id: x.id, nombre: x.nombre_empresa, detalle: detalleVence(x.apto_vence, 'Apto médico') })), `No hay aptos médicos vencidos ni que venzan en los próximos ${AVISO_APTO_DIAS} días.`);
 window.bnVerClases = () => { const c = $('bn-clases'); if (c) c.scrollIntoView({ behavior: 'smooth', block: 'start' }); };
 
+// Cuota y apto médico solo tienen sentido en gimnasio, clases y yoga. En consultorios, peluquerías, spa, etc. no se muestran.
+const ACT_VENCE = ['gimnasio', 'clases', 'yoga'];
+const usaVencimientos = () => !negocio || !(negocio.actividades || []).length || (negocio.actividades || []).some((a) => ACT_VENCE.includes(a));
 let ultimoResumen = null;
 function pintarResumen(r) {
   ultimoResumen = r; estilosHub();
@@ -316,11 +324,12 @@ function pintarResumen(r) {
   const deHoy = (clases || []).filter((c) => c.fecha === hoyStr() && !c.pasada && !c.suspendida).length;
   const items = [
     ...(pendientes ? [{ n: pendientes.length, t: pendientes.length === 1 ? 'Turno por confirmar' : 'Turnos por confirmar', cls: pendientes.length ? 'text-ambar' : 'text-verde', go: 'bnVerTurnos()' }] : []),
-    { n: socios ? cuotas : '–', t: 'Cuotas por vencer', cls: cuotas ? 'text-rojo' : 'text-verde', go: 'bnVerCuotas()' },
-    { n: socios ? aptos : '–', t: 'Aptos médicos por vencer', cls: aptos ? 'text-ambar' : 'text-verde', go: 'bnVerAptos()' },
+    ...(usaVencimientos() ? [{ n: socios ? cuotas : '–', t: 'Cuotas por vencer', cls: cuotas ? 'text-rojo' : 'text-verde', go: 'bnVerCuotas()' },
+    { n: socios ? aptos : '–', t: 'Aptos médicos por vencer', cls: aptos ? 'text-ambar' : 'text-verde', go: 'bnVerAptos()' }] : []),
     { n: (r.vencidas || 0) + (r.hoy || 0), t: 'Avisos de hoy', cls: (r.vencidas || r.hoy) ? 'text-ambar' : 'text-verde', go: r.vencidas ? 'verVencidas()' : `navegarA('${rol === 'asistente' ? 'mis-tareas' : 'kanban'}')` },
     { n: clases ? deHoy : '–', t: 'Clases que quedan hoy', cls: 'text-verde', go: 'bnVerClases()' }
   ];
+  const wv = $('bn-alta-vence'); if (wv) wv.hidden = !usaVencimientos();
   cont.innerHTML = items.map((i) => `<button type="button" class="res-card" onclick="${i.go}"><span class="numero ${i.cls}">${esc(i.n)}</span><span class="res-t">${esc(i.t)}</span></button>`).join('');
 }
 
@@ -381,6 +390,7 @@ function estadoVence(s, que, aviso) {
   return `<div class="bn-est ${cls}">${esc(detalleVence(s, que))}</div>`;
 }
 async function bloqueVencimientos(id) {
+  if (!usaVencimientos()) { const o = $('bn-vence-ficha'); if (o) o.remove(); return; }
   estilosHub();
   const lista = $('lista-tareas-cliente'); if (!lista) return;
   let b = $('bn-vence-ficha'); if (!b) { b = document.createElement('section'); b.id = 'bn-vence-ficha'; b.className = 'ficha-datos'; lista.parentNode.insertBefore(b, lista); }
@@ -441,7 +451,7 @@ async function apiAgenda(accion, datos) {
   if (!r.ok && r.error === 'sesion_invalida') guardarSesionAgenda(null);
   return r;
 }
-let listaClases = [];
+let listaClases = [], trasLogin = () => adminClases();
 function cajaClases(html) {
   estilos(); estilosHub(); cerrar();
   const f = document.createElement('div'); f.id = 'bn-fondo'; f.className = 'bn-fondo'; f.setAttribute('role', 'dialog'); f.setAttribute('aria-modal', 'true'); f.setAttribute('aria-labelledby', 'bn-t');
@@ -451,6 +461,7 @@ function cajaClases(html) {
   return f;
 }
 async function adminClases() {
+  trasLogin = adminClases;
   if (!window.TURNOS_API) { cajaClases('<h2 id="bn-t">Clases del centro</h2><p>La agenda de turnos todavía no está conectada.</p>'); return; }
   cajaClases('<h2 id="bn-t">Clases del centro</h2><p>Cargando clases…</p>');
   if (!(await renovarAgenda())) return loginAgenda();
@@ -459,7 +470,7 @@ async function adminClases() {
   listaClases = r.clases || []; pintarListaClases();
 }
 function loginAgenda(msg) {
-  const f = cajaClases(`<form id="bn-lg" novalidate><h2 id="bn-t">Ingresar a la agenda</h2><p>Para cambiar clases, entre con el correo y la clave de la <b>Agenda de turnos</b>. Queda guardado en este dispositivo.</p>
+  const f = cajaClases(`<form id="bn-lg" novalidate><h2 id="bn-t">Ingresar a la agenda</h2><p>Para cambiar clases u horarios, entre con el correo y la clave de la <b>Agenda de turnos</b>. Queda guardado en este dispositivo.</p>
     <label class="bn-l" for="bn-lg-e">Correo</label><input type="text" id="bn-lg-e" inputmode="email" autocomplete="username" value="${esc((D().auth && D().auth.currentUser && D().auth.currentUser.email) || '')}">
     <label class="bn-l" for="bn-lg-c">Clave</label><div style="display:flex;gap:8px"><input type="password" id="bn-lg-c" autocomplete="current-password" style="flex:1"><button type="button" class="bn-btn sec" id="bn-lg-ver" aria-label="Mostrar la clave" aria-pressed="false" style="padding:0 14px">👁</button></div>
     <div class="bn-err" id="bn-lg-err" role="alert">${esc(msg || '')}</div><div class="bn-fila"><button type="submit" class="bn-btn" id="bn-lg-ok">Ingresar</button></div></form>`);
@@ -469,10 +480,54 @@ function loginAgenda(msg) {
     ev.preventDefault(); const b = $('bn-lg-ok'); b.disabled = true; b.textContent = 'Ingresando…';
     const r = await llamar('login', { email: $('bn-lg-e').value.trim(), clave: $('bn-lg-c').value });
     if (!r.ok) { b.disabled = false; b.textContent = 'Ingresar'; $('bn-lg-err').textContent = errClase(r.error); return; }
-    guardarSesionAgenda({ tok: r.token, user: r.usuario }); adminClases();
+    guardarSesionAgenda({ tok: r.token, user: r.usuario }); trasLogin();
   };
   return f;
 }
+// ── Horarios de atención: días y horas en que atiende cada profesional (turnos individuales) ──
+const ERR_HOR = { horario_invalido: 'Revise los horarios: «hasta» tiene que ser después de «desde», en puntos de 30 minutos (9:00, 9:30…).', horarios_superpuestos: 'Hay dos franjas que se pisan el mismo día. Ajústelas para que no se superpongan.', recurso_invalido: 'Ese profesional ya no está en la agenda. Cierre y vuelva a abrir.', sin_permiso: 'Su usuario de la agenda no tiene permiso para cambiar horarios (lo hace la Dirección).' };
+let datosHor = null, profHor = '';
+async function adminHorarios() {
+  trasLogin = adminHorarios;
+  if (!window.TURNOS_API) { cajaClases('<h2 id="bn-t">Horarios de atención</h2><p>La agenda de turnos todavía no está conectada.</p>'); return; }
+  cajaClases('<h2 id="bn-t">Horarios de atención</h2><p>Cargando…</p>');
+  if (!(await renovarAgenda())) return loginAgenda();
+  const r = await apiAgenda('horarios_config', {});
+  if (!r.ok) { if (r.error === 'sesion_invalida') return loginAgenda(); cajaClases(`<h2 id="bn-t">Horarios de atención</h2><p class="bn-err">${esc(ERR_HOR[r.error] || errClase(r.error))}</p>`); return; }
+  datosHor = r.profesionales || []; profHor = datosHor.length ? datosHor[0].id : ''; pintarHorarios();
+}
+const filaFranja = (d, desde, hasta) => `<div class="bn-fr" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 0"><input type="time" step="1800" class="bn-fd" value="${esc(desde || '09:00')}" aria-label="Desde"><span>a</span><input type="time" step="1800" class="bn-fh" value="${esc(hasta || '13:00')}" aria-label="Hasta"><button type="button" class="bn-btn sec bn-fq" aria-label="Quitar franja" style="padding:8px 12px">✕</button></div>`;
+function pintarHorarios() {
+  const p = datosHor.find((x) => x.id === profHor);
+  if (!p) { cajaClases('<h2 id="bn-t">Horarios de atención</h2><p>Todavía no hay profesionales cargados. Agréguelos en «Equipo y puestos».</p>'); return; }
+  const porDia = (d) => p.horarios.filter((h) => h.dia === d);
+  cajaClases(`<h2 id="bn-t">Horarios de atención</h2><p>Elija en qué días y horas atiende. Quien reserva solo ve esos horarios. Los turnos que ya están tomados no se mueven.</p>
+    ${datosHor.length > 1 ? `<label class="bn-l" for="bn-hp">Profesional</label><select id="bn-hp" style="width:100%;padding:12px;border-radius:8px;border:1px solid var(--line,#2a2d33);background:var(--bg-base,#0a0a0a);color:inherit;font-size:1rem">${datosHor.map((x) => `<option value="${esc(x.id)}"${x.id === profHor ? ' selected' : ''}>${esc(x.nombre)}</option>`).join('')}</select>` : `<h3 class="bn-sub">${esc(p.nombre)}</h3>`}
+    <div id="bn-hd" style="margin-top:10px">${DIAS.map(([d, t]) => { const hs = porDia(d); return `<div class="bn-hdia" data-d="${d}" style="border-top:1px solid var(--line,#2a2d33);padding:8px 0"><label style="display:flex;gap:10px;align-items:center;font-weight:700"><input type="checkbox" class="bn-hon" style="width:22px;height:22px;accent-color:#d4af37"${hs.length ? ' checked' : ''}>${t}</label><div class="bn-frs" style="margin-left:32px"${hs.length ? '' : ' hidden'}>${(hs.length ? hs : [{ desde: '09:00', hasta: '13:00' }]).map((h) => filaFranja(d, h.desde, h.hasta)).join('')}<button type="button" class="bn-btn sec bn-fm" style="padding:8px 12px;margin-top:4px">+ Otra franja</button></div></div>`; }).join('')}</div>
+    ${datosHor.length > 1 ? '<label style="display:flex;gap:10px;align-items:center;margin-top:12px"><input type="checkbox" id="bn-todos" style="width:22px;height:22px;accent-color:#d4af37">Aplicar estos mismos horarios a todo el equipo</label>' : ''}
+    <div class="bn-err" id="bn-hr-err" role="alert"></div><div class="bn-fila"><button type="button" class="bn-btn" id="bn-hg">Guardar horarios</button><button type="button" class="bn-btn sec" id="bn-hc">Cerrar</button></div>`);
+  const caja = $('bn-caja'), leer = () => { const out = []; caja.querySelectorAll('.bn-hdia').forEach((el) => { if (!el.querySelector('.bn-hon').checked) return; el.querySelectorAll('.bn-fr').forEach((f) => out.push({ dia: Number(el.dataset.d), desde: f.querySelector('.bn-fd').value, hasta: f.querySelector('.bn-fh').value })); }); return out; };
+  if ($('bn-hp')) $('bn-hp').onchange = () => { profHor = $('bn-hp').value; pintarHorarios(); };
+  $('bn-hc').onclick = cerrar;
+  caja.addEventListener('click', (e) => {
+    const fm = e.target.closest('.bn-fm'), fq = e.target.closest('.bn-fq');
+    if (fm) fm.insertAdjacentHTML('beforebegin', filaFranja(0, '16:00', '19:00'));
+    if (fq) { const cont = fq.closest('.bn-frs'); if (cont.querySelectorAll('.bn-fr').length > 1) fq.closest('.bn-fr').remove(); else { const c = fq.closest('.bn-hdia').querySelector('.bn-hon'); c.checked = false; cont.hidden = true; } }
+  });
+  caja.addEventListener('change', (e) => { const c = e.target.closest('.bn-hon'); if (c) c.closest('.bn-hdia').querySelector('.bn-frs').hidden = !c.checked; });
+  $('bn-hg').onclick = async () => {
+    const hs = leer(), err = $('bn-hr-err'); err.textContent = '';
+    if (!hs.length && !confirm('No marcó ningún día: nadie va a poder pedir turno con esta persona. ¿Guardar igual?')) return;
+    const b = $('bn-hg'); b.disabled = true; b.textContent = 'Guardando…';
+    const ids = $('bn-todos') && $('bn-todos').checked ? datosHor.map((x) => x.id) : [profHor];
+    const r = await apiAgenda('guardar_horarios', { recurso_ids: ids, horarios: hs });
+    b.disabled = false; b.textContent = 'Guardar horarios';
+    if (!r.ok) { if (r.error === 'sesion_invalida') return loginAgenda('Vuelva a ingresar para continuar.'); err.textContent = ERR_HOR[r.error] || errClase(r.error); return; }
+    ids.forEach((id) => { const x = datosHor.find((y) => y.id === id); if (x) x.horarios = hs.map((h) => ({ dia: h.dia, desde: h.desde, hasta: h.hasta })); });
+    err.style.color = 'var(--ok,#4CC38A)'; err.textContent = ids.length > 1 ? 'Horarios guardados para todo el equipo.' : 'Horarios guardados.';
+  };
+}
+
 function textoHorarios(hs) {
   const porHora = {}; (hs || []).forEach((h) => { (porHora[h.desde] = porHora[h.desde] || []).push(h.dia); });
   return Object.entries(porHora).sort((a, b) => a[0].localeCompare(b[0])).map(([hh, ds]) => DIAS.filter((d) => ds.includes(d[0])).map((d) => d[1]).join(', ') + ' ' + hh).join(' · ') || 'Sin horarios';

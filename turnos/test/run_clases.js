@@ -36,4 +36,25 @@ T('cargarActividades crea salas, clases con cupo y servicios individuales', () =
 T('es idempotente: repetirla no duplica nada', () => { const m = conAct('clases'); m.ctx.cargarActividades(); const n1 = m.libros.servicios.length, h1 = m.libros.horarios.length; const r = m.ctx.cargarActividades(); assert(r.recursos === 0 && r.servicios === 0 && r.horarios === 0 && m.libros.servicios.length === n1 && m.libros.horarios.length === h1); });
 T('lo cargado se puede reservar: clase de Funcional con cupo 15', () => { const m = conAct('clases'); m.ctx.cargarActividades(); const id = m.libros.servicios.find(x => x[1] === 'Funcional')[0]; const r = m.llamar({ accion: 'horarios_libres', servicio_id: id, desde: '2026-10-27', dias: 7 }); assert(r.ok && r.dias.length >= 1); const d = r.dias[0], rid = Object.keys(d.recursos)[0], hh = d.recursos[rid][0]; assert.strictEqual(d.lugares[rid][hh], 15); const ok1 = m.llamar({ accion: 'reservar', servicio_id: id, recurso_id: rid, fecha: d.fecha, hora: hh, nombre: 'Socia Uno', tel: '261 555 1111', consentimiento: true }); assert(ok1.ok, JSON.stringify(ok1)); });
 T('actividad que no existe o fila ausente → error claro', () => { const m = conAct('inventada'); assert.throws(() => m.ctx.cargarActividades(), /catálogo/); const m2 = nuevo(); assert.throws(() => m2.ctx.cargarActividades(), /actividades/); });
+console.log('Horarios de atención (Hub)');
+T('la Dirección ve y cambia los horarios de un profesional; solo se ofrece lo nuevo', () => {
+  const m = nuevo(), tok = dueno(m); const c = m.llamar({ accion: 'horarios_config', token: tok }); assert(c.ok && c.profesionales.some(x => x.id === 'R1'), JSON.stringify(c));
+  const r = m.llamar({ accion: 'guardar_horarios', token: tok, recurso_id: 'R1', horarios: [{ dia: 2, desde: '15:00', hasta: '17:00' }] }); assert(r.ok, JSON.stringify(r));
+  assert.deepStrictEqual(m.llamar({ accion: 'horarios_config', token: tok }).profesionales.find(x => x.id === 'R1').horarios, [{ dia: 2, desde: '15:00', hasta: '17:00' }]);
+  const l = m.llamar({ accion: 'horarios_libres', servicio_id: 'S1', recurso_id: 'R1', desde: '2026-10-27', dias: 1 }); assert.deepStrictEqual(l.dias[0].recursos.R1, ['15:00', '15:30', '16:00', '16:30'].filter(h => l.dias[0].recursos.R1.includes(h)));
+  assert(l.dias[0].recursos.R1.length && l.dias[0].recursos.R1.every(h => h >= '15:00' && h < '17:00'), JSON.stringify(l.dias[0].recursos));
+});
+T('horarios inválidos o superpuestos se rechazan y no se pierde lo que había', () => {
+  const m = nuevo(), tok = dueno(m); const antes = JSON.stringify(m.libros.horarios);
+  const g = (h) => m.llamar({ accion: 'guardar_horarios', token: tok, recurso_id: 'R1', horarios: h });
+  assert.strictEqual(g([{ dia: 1, desde: '10:00', hasta: '09:00' }]).error, 'horario_invalido');
+  assert.strictEqual(g([{ dia: 1, desde: '10:10', hasta: '11:00' }]).error, 'horario_invalido');
+  assert.strictEqual(g([{ dia: 1, desde: '09:00', hasta: '12:00' }, { dia: 1, desde: '11:00', hasta: '13:00' }]).error, 'horarios_superpuestos');
+  assert.strictEqual(m.llamar({ accion: 'guardar_horarios', token: tok, recurso_id: 'NO', horarios: [] }).error, 'recurso_invalido');
+  assert.strictEqual(JSON.stringify(m.libros.horarios), antes);
+});
+T('se puede aplicar los mismos horarios a todo el equipo', () => {
+  const m = nuevo(), tok = dueno(m); const r = m.llamar({ accion: 'guardar_horarios', token: tok, recurso_ids: ['R1', 'R2'], horarios: [{ dia: 3, desde: '09:00', hasta: '12:00' }, { dia: 3, desde: '14:00', hasta: '18:00' }] }); assert(r.ok, JSON.stringify(r));
+  const c = m.llamar({ accion: 'horarios_config', token: tok }).profesionales; ['R1', 'R2'].forEach(id => assert.strictEqual(c.find(x => x.id === id).horarios.length, 2));
+});
 console.log('\n' + ok + ' bien, ' + fail + ' con error'); process.exit(fail ? 1 : 0);
