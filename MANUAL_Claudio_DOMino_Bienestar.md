@@ -81,8 +81,16 @@ Dirección (todo) · Profesor/a o profesional (ve su propia agenda) · Recepció
 - Se cargan al registrar al socio (opcional) o en su ficha, en el bloque **Cuota y apto médico**: fecha de vencimiento de la cuota y del apto. La ficha muestra si está al día, por vencer o vencido.
 - Todavía no hay planes ni cobros: solo la fecha de vencimiento, para avisar a tiempo.
 
+## Consultorio médico (urología y otras especialidades)
+- Actividad «Consultorio médico»: turnos de 30 minutos (primera consulta, control, consulta de resultados, control post-operatorio) con el médico como profesional. Se elige en Actividades; no muestra cuota ni apto médico.
+- **Privacidad:** en los centros de salud (médico, psicología, nutrición y kinesiología) la página de reserva **no tiene comentario libre** y avisa que no se escriban motivos de consulta ni datos de salud. Aunque alguien lo intente, el servidor descarta el comentario. El personal puede anotar lo que necesite al cargar un turno a mano. **La app no es historia clínica y no hay que presentarla como tal.**
+- **Sedes (varios centros):** en Horarios de atención → «Sedes y cobro» se cargan los lugares donde atiende el médico (hasta 12). En cada franja horaria se elige la sede. Quien reserva ve en cada hora el lugar, el turno guarda la sede y la agenda, los mails y los avisos de WhatsApp la mencionan. Como el médico es un solo profesional, un horario tomado en una sede deja de ofrecerse en las demás, y dos franjas de sedes distintas no pueden pisarse el mismo día. No se puede quitar una sede que todavía tiene horarios.
+- **Cobro:** en el mismo lugar se pega el enlace de pago del profesional (por ejemplo, de Mercado Pago; solo https). En cada turno el personal ve «Abrir cobro» y «Enviar link de pago por WhatsApp» (abre WhatsApp con el mensaje armado; lo envía el personal). La app **no cobra ni guarda datos de tarjetas**: el pago ocurre en la plataforma de pago y la plata va directo al médico. No hay conciliación automática: quien atiende confirma a mano que el pago llegó.
+- **WhatsApp:** hoy es manual asistido (botón que abre el chat con el mensaje listo, en Avisos de mañana y en cada turno). No hay envío automático; eso requeriría la API oficial de WhatsApp Business (aprobación de Meta y costo), no incluida.
+- **Otros sistemas de los centros:** no hay integración con los programas de cada centro. La agenda de DOMino sirve como agenda propia del médico; los turnos que le dan en cada centro se cargan como bloqueos o turnos a mano para no superponerse. Cualquier integración se evalúa recién cuando se sepa qué programa usa cada centro y si ofrece conexión.
+
 ## Lo que todavía no está
-Planes y cobro de cuotas (por ahora solo se carga la fecha de vencimiento), asistencia a clases, lista de espera, página pública del centro y gestión de documentos (figura como «Próximamente»). No prometer nada de eso como disponible.
+Planes y cobro automático de cuotas o consultas (por ahora solo el enlace de pago y la fecha de vencimiento), integración con otros sistemas, WhatsApp automático, historia clínica, asistencia a clases, lista de espera, página pública del centro y gestión de documentos (figura como «Próximamente»). No prometer nada de eso como disponible.
 
 ## Preguntas frecuentes
 - *¿Cuántas personas entran a una clase?* Lo define el cupo de cada clase en la planilla (columna `cupo`).

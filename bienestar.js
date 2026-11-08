@@ -485,8 +485,8 @@ function loginAgenda(msg) {
   return f;
 }
 // ── Horarios de atención: días y horas en que atiende cada profesional (turnos individuales) ──
-const ERR_HOR = { horario_invalido: 'Revise los horarios: «hasta» tiene que ser después de «desde», en puntos de 30 minutos (9:00, 9:30…).', horarios_superpuestos: 'Hay dos franjas que se pisan el mismo día. Ajústelas para que no se superpongan.', recurso_invalido: 'Ese profesional ya no está en la agenda. Cierre y vuelva a abrir.', sin_permiso: 'Su usuario de la agenda no tiene permiso para cambiar horarios (lo hace la Dirección).' };
-let datosHor = null, profHor = '';
+const ERR_HOR = { horario_invalido: 'Revise los horarios: «hasta» tiene que ser después de «desde», en puntos de 30 minutos (9:00, 9:30…).', horarios_superpuestos: 'Hay dos franjas que se pisan el mismo día. Ajústelas para que no se superpongan.', recurso_invalido: 'Ese profesional ya no está en la agenda. Cierre y vuelva a abrir.', sin_permiso: 'Su usuario de la agenda no tiene permiso para cambiar horarios (lo hace la Dirección).', sede_invalida: 'Una franja usa una sede que ya no existe. Elija otra o «Sin sede».', sede_en_uso: 'No se puede quitar una sede que todavía tiene horarios. Cambie esos horarios a otra sede y vuelva a intentar.', demasiadas_sedes: 'Como máximo 12 sedes.', enlace_invalido: 'El enlace de cobro tiene que empezar con https://' };
+let datosHor = null, profHor = '', sedesHor = [], cobroHor = '';
 async function adminHorarios() {
   trasLogin = adminHorarios;
   if (!window.TURNOS_API) { cajaClases('<h2 id="bn-t">Horarios de atención</h2><p>La agenda de turnos todavía no está conectada.</p>'); return; }
@@ -494,24 +494,47 @@ async function adminHorarios() {
   if (!(await renovarAgenda())) return loginAgenda();
   const r = await apiAgenda('horarios_config', {});
   if (!r.ok) { if (r.error === 'sesion_invalida') return loginAgenda(); cajaClases(`<h2 id="bn-t">Horarios de atención</h2><p class="bn-err">${esc(ERR_HOR[r.error] || errClase(r.error))}</p>`); return; }
-  datosHor = r.profesionales || []; profHor = datosHor.length ? datosHor[0].id : ''; pintarHorarios();
+  sedesHor = r.sedes || []; cobroHor = r.cobro_url || ''; datosHor = r.profesionales || []; profHor = datosHor.length ? datosHor[0].id : ''; pintarHorarios();
 }
-const filaFranja = (d, desde, hasta) => `<div class="bn-fr" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 0"><input type="time" step="1800" class="bn-fd" value="${esc(desde || '09:00')}" aria-label="Desde"><span>a</span><input type="time" step="1800" class="bn-fh" value="${esc(hasta || '13:00')}" aria-label="Hasta"><button type="button" class="bn-btn sec bn-fq" aria-label="Quitar franja" style="padding:8px 12px">✕</button></div>`;
+const selSede = (sede) => sedesHor.length ? `<select class="bn-fs" aria-label="Sede" style="padding:8px;border-radius:8px;border:1px solid var(--line,#2a2d33);background:var(--bg-base,#0a0a0a);color:inherit"><option value="">Sin sede</option>${sedesHor.map((x) => `<option value="${esc(x)}"${x === sede ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select>` : '';
+const filaFranja = (d, desde, hasta, sede) => `<div class="bn-fr" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 0"><input type="time" step="1800" class="bn-fd" value="${esc(desde || '09:00')}" aria-label="Desde"><span>a</span><input type="time" step="1800" class="bn-fh" value="${esc(hasta || '13:00')}" aria-label="Hasta">${selSede(sede)}<button type="button" class="bn-btn sec bn-fq" aria-label="Quitar franja" style="padding:8px 12px">✕</button></div>`;
 function pintarHorarios() {
   const p = datosHor.find((x) => x.id === profHor);
   if (!p) { cajaClases('<h2 id="bn-t">Horarios de atención</h2><p>Todavía no hay profesionales cargados. Agréguelos en «Equipo y puestos».</p>'); return; }
   const porDia = (d) => p.horarios.filter((h) => h.dia === d);
-  cajaClases(`<h2 id="bn-t">Horarios de atención</h2><p>Elija en qué días y horas atiende. Quien reserva solo ve esos horarios. Los turnos que ya están tomados no se mueven.</p>
+  cajaClases(`<h2 id="bn-t">Horarios de atención</h2>
+    <details style="margin:8px 0 12px;border:1px solid var(--line,#2a2d33);border-radius:10px;padding:10px"${sedesHor.length || cobroHor ? ' open' : ''}><summary style="cursor:pointer;font-weight:700">Sedes y cobro (opcional)</summary>
+      <label class="bn-l" for="bn-sedes">Sedes: los lugares donde atiende (sepárelos con coma). Después elige la sede de cada franja horaria.</label>
+      <input id="bn-sedes" type="text" maxlength="400" placeholder="Ej.: Clínica Norte, Sanatorio Centro, Consultorio propio" value="${esc(sedesHor.join(', '))}" style="width:100%;padding:12px;border-radius:8px;border:1px solid var(--line,#2a2d33);background:var(--bg-base,#0a0a0a);color:inherit;font-size:1rem">
+      <div class="bn-fila"><button type="button" class="bn-btn sec" id="bn-sedes-g">Guardar sedes</button></div>
+      <label class="bn-l" for="bn-cobro" style="margin-top:10px">Enlace de cobro (por ejemplo, el link de pago de Mercado Pago). Lo ve solo el personal, en cada turno.</label>
+      <input id="bn-cobro" type="url" maxlength="300" placeholder="https://…" value="${esc(cobroHor)}" style="width:100%;padding:12px;border-radius:8px;border:1px solid var(--line,#2a2d33);background:var(--bg-base,#0a0a0a);color:inherit;font-size:1rem">
+      <div class="bn-fila"><button type="button" class="bn-btn sec" id="bn-cobro-g">Guardar enlace de cobro</button></div>
+      <div class="bn-err" id="bn-sc-msg" role="alert"></div>
+    </details>
+    <p>Elija en qué días y horas atiende. Quien reserva solo ve esos horarios. Los turnos que ya están tomados no se mueven.</p>
     ${datosHor.length > 1 ? `<label class="bn-l" for="bn-hp">Profesional</label><select id="bn-hp" style="width:100%;padding:12px;border-radius:8px;border:1px solid var(--line,#2a2d33);background:var(--bg-base,#0a0a0a);color:inherit;font-size:1rem">${datosHor.map((x) => `<option value="${esc(x.id)}"${x.id === profHor ? ' selected' : ''}>${esc(x.nombre)}</option>`).join('')}</select>` : `<h3 class="bn-sub">${esc(p.nombre)}</h3>`}
-    <div id="bn-hd" style="margin-top:10px">${DIAS.map(([d, t]) => { const hs = porDia(d); return `<div class="bn-hdia" data-d="${d}" style="border-top:1px solid var(--line,#2a2d33);padding:8px 0"><label style="display:flex;gap:10px;align-items:center;font-weight:700"><input type="checkbox" class="bn-hon" style="width:22px;height:22px;accent-color:#d4af37"${hs.length ? ' checked' : ''}>${t}</label><div class="bn-frs" style="margin-left:32px"${hs.length ? '' : ' hidden'}>${(hs.length ? hs : [{ desde: '09:00', hasta: '13:00' }]).map((h) => filaFranja(d, h.desde, h.hasta)).join('')}<button type="button" class="bn-btn sec bn-fm" style="padding:8px 12px;margin-top:4px">+ Otra franja</button></div></div>`; }).join('')}</div>
+    <div id="bn-hd" style="margin-top:10px">${DIAS.map(([d, t]) => { const hs = porDia(d); return `<div class="bn-hdia" data-d="${d}" style="border-top:1px solid var(--line,#2a2d33);padding:8px 0"><label style="display:flex;gap:10px;align-items:center;font-weight:700"><input type="checkbox" class="bn-hon" style="width:22px;height:22px;accent-color:#d4af37"${hs.length ? ' checked' : ''}>${t}</label><div class="bn-frs" style="margin-left:32px"${hs.length ? '' : ' hidden'}>${(hs.length ? hs : [{ desde: '09:00', hasta: '13:00' }]).map((h) => filaFranja(d, h.desde, h.hasta, h.sede)).join('')}<button type="button" class="bn-btn sec bn-fm" style="padding:8px 12px;margin-top:4px">+ Otra franja</button></div></div>`; }).join('')}</div>
     ${datosHor.length > 1 ? '<label style="display:flex;gap:10px;align-items:center;margin-top:12px"><input type="checkbox" id="bn-todos" style="width:22px;height:22px;accent-color:#d4af37">Aplicar estos mismos horarios a todo el equipo</label>' : ''}
     <div class="bn-err" id="bn-hr-err" role="alert"></div><div class="bn-fila"><button type="button" class="bn-btn" id="bn-hg">Guardar horarios</button><button type="button" class="bn-btn sec" id="bn-hc">Cerrar</button></div>`);
-  const caja = $('bn-caja'), leer = () => { const out = []; caja.querySelectorAll('.bn-hdia').forEach((el) => { if (!el.querySelector('.bn-hon').checked) return; el.querySelectorAll('.bn-fr').forEach((f) => out.push({ dia: Number(el.dataset.d), desde: f.querySelector('.bn-fd').value, hasta: f.querySelector('.bn-fh').value })); }); return out; };
+  const caja = $('bn-caja'), leer = () => { const out = []; caja.querySelectorAll('.bn-hdia').forEach((el) => { if (!el.querySelector('.bn-hon').checked) return; el.querySelectorAll('.bn-fr').forEach((f) => out.push({ dia: Number(el.dataset.d), desde: f.querySelector('.bn-fd').value, hasta: f.querySelector('.bn-fh').value, sede: f.querySelector('.bn-fs') ? f.querySelector('.bn-fs').value : '' })); }); return out; };
   if ($('bn-hp')) $('bn-hp').onchange = () => { profHor = $('bn-hp').value; pintarHorarios(); };
   $('bn-hc').onclick = cerrar;
+  const msgSC = (t, ok) => { const m = $('bn-sc-msg'); m.style.color = ok ? 'var(--ok,#4CC38A)' : ''; m.textContent = t; };
+  $('bn-sedes-g').onclick = async () => {
+    const lista = $('bn-sedes').value.split(',').map((x) => x.trim()).filter(Boolean);
+    const r = await apiAgenda('guardar_sedes', { sedes: lista });
+    if (!r.ok) { if (r.error === 'sesion_invalida') return loginAgenda('Vuelva a ingresar para continuar.'); return msgSC(ERR_HOR[r.error] || errClase(r.error)); }
+    sedesHor = r.sedes || []; pintarHorarios(); msgSC(sedesHor.length ? 'Sedes guardadas. Ahora elija la sede de cada franja y guarde los horarios.' : 'Sin sedes.', true);
+  };
+  $('bn-cobro-g').onclick = async () => {
+    const r = await apiAgenda('guardar_cobro', { cobro_url: $('bn-cobro').value.trim() });
+    if (!r.ok) { if (r.error === 'sesion_invalida') return loginAgenda('Vuelva a ingresar para continuar.'); return msgSC(ERR_HOR[r.error] || errClase(r.error)); }
+    cobroHor = r.cobro_url || ''; msgSC(cobroHor ? 'Enlace de cobro guardado.' : 'Enlace de cobro quitado.', true);
+  };
   caja.addEventListener('click', (e) => {
     const fm = e.target.closest('.bn-fm'), fq = e.target.closest('.bn-fq');
-    if (fm) fm.insertAdjacentHTML('beforebegin', filaFranja(0, '16:00', '19:00'));
+    if (fm) fm.insertAdjacentHTML('beforebegin', filaFranja(0, '16:00', '19:00', ''));
     if (fq) { const cont = fq.closest('.bn-frs'); if (cont.querySelectorAll('.bn-fr').length > 1) fq.closest('.bn-fr').remove(); else { const c = fq.closest('.bn-hdia').querySelector('.bn-hon'); c.checked = false; cont.hidden = true; } }
   });
   caja.addEventListener('change', (e) => { const c = e.target.closest('.bn-hon'); if (c) c.closest('.bn-hdia').querySelector('.bn-frs').hidden = !c.checked; });
@@ -523,7 +546,7 @@ function pintarHorarios() {
     const r = await apiAgenda('guardar_horarios', { recurso_ids: ids, horarios: hs });
     b.disabled = false; b.textContent = 'Guardar horarios';
     if (!r.ok) { if (r.error === 'sesion_invalida') return loginAgenda('Vuelva a ingresar para continuar.'); err.textContent = ERR_HOR[r.error] || errClase(r.error); return; }
-    ids.forEach((id) => { const x = datosHor.find((y) => y.id === id); if (x) x.horarios = hs.map((h) => ({ dia: h.dia, desde: h.desde, hasta: h.hasta })); });
+    ids.forEach((id) => { const x = datosHor.find((y) => y.id === id); if (x) x.horarios = hs.map((h) => ({ dia: h.dia, desde: h.desde, hasta: h.hasta, sede: h.sede || '' })); });
     err.style.color = 'var(--ok,#4CC38A)'; err.textContent = ids.length > 1 ? 'Horarios guardados para todo el equipo.' : 'Horarios guardados.';
   };
 }

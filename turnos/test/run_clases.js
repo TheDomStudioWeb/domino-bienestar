@@ -40,7 +40,7 @@ console.log('Horarios de atención (Hub)');
 T('la Dirección ve y cambia los horarios de un profesional; solo se ofrece lo nuevo', () => {
   const m = nuevo(), tok = dueno(m); const c = m.llamar({ accion: 'horarios_config', token: tok }); assert(c.ok && c.profesionales.some(x => x.id === 'R1'), JSON.stringify(c));
   const r = m.llamar({ accion: 'guardar_horarios', token: tok, recurso_id: 'R1', horarios: [{ dia: 2, desde: '15:00', hasta: '17:00' }] }); assert(r.ok, JSON.stringify(r));
-  assert.deepStrictEqual(m.llamar({ accion: 'horarios_config', token: tok }).profesionales.find(x => x.id === 'R1').horarios, [{ dia: 2, desde: '15:00', hasta: '17:00' }]);
+  assert.deepStrictEqual(m.llamar({ accion: 'horarios_config', token: tok }).profesionales.find(x => x.id === 'R1').horarios, [{ dia: 2, desde: '15:00', hasta: '17:00', sede: '' }]);
   const l = m.llamar({ accion: 'horarios_libres', servicio_id: 'S1', recurso_id: 'R1', desde: '2026-10-27', dias: 1 }); assert.deepStrictEqual(l.dias[0].recursos.R1, ['15:00', '15:30', '16:00', '16:30'].filter(h => l.dias[0].recursos.R1.includes(h)));
   assert(l.dias[0].recursos.R1.length && l.dias[0].recursos.R1.every(h => h >= '15:00' && h < '17:00'), JSON.stringify(l.dias[0].recursos));
 });

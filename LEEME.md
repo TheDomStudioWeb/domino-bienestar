@@ -34,3 +34,9 @@ Una sola app para muchos centros: datos en `negocios/{id}/…`, personal en `use
 - En la planilla: clave `puestos_<actividad>` en la hoja config; cada profesional es un recurso `R_<actividad>` / `R_<actividad>_p2`…; los turnos reservan además un tramo `P_<actividad>|fecha|hora` en la hoja slots (así nunca se pasan de los puestos).
 - Reserva sin elegir profesional: `recurso_id: "auto"`; el servidor elige al libre con menos turnos ese día.
 - **Al publicar esta versión hay que pegar el nuevo Code.gs en Apps Script y volver a implementar.** Las pruebas: `node turnos/test/run_puestos.js`.
+
+## Consultorio médico, sedes y cobro
+- Actividad `medico` (catálogo). En centros de salud la reserva pública no admite comentario libre (el servidor lo descarta).
+- Sedes: clave `sedes` en `config` (coma) y columna `sede` en `horarios` y `turnos`. Se editan en el Hub → Horarios de atención → «Sedes y cobro». Acciones: `guardar_sedes`, `guardar_cobro`. La sede del turno la fija el servidor según la franja.
+- Cobro: clave `cobro_url` (solo https). La app solo muestra el enlace; no maneja pagos.
+- **Al publicar esta versión hay que pegar el nuevo Code.gs en Apps Script y volver a implementar (nueva versión).** Pruebas: `node turnos/test/run_sedes.js`.
