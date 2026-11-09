@@ -134,3 +134,15 @@ Cambio de diseño, no de datos. Referencia: videos "Glassy Dashboard V24" y "Gla
 - Si el teléfono tiene "reducir movimiento", todo aparece sin animaciones.
 
 **Para responder por voz:** "¿Qué es el porcentaje del Inicio?" → En gimnasios, cuántos socios tienen la cuota al día; en consultorios, cuántos turnos de hoy ya están confirmados. "¿Qué son los puntitos de la semana?" → Rojo cuotas, ámbar aptos médicos, dorado seguimientos de ese día.
+
+
+## Ingreso "líquido" (09/11/2026)
+La pantalla de ingreso muestra un solo botón dorado **Ingresar**. Al tocarlo, el botón se estira, se afina en el medio como un líquido y se divide en dos: se convierten en los campos **Correo** y **Contraseña**.
+- Se escribe el correo, se toca Enter (o se pasa al otro campo) y se escribe la contraseña. Para entrar: Enter o la **flecha** dorada dentro del campo. "Ver" muestra la contraseña.
+- Al enviar, los campos se vuelven a unir en el botón con "Ingresando…". Si los datos son correctos aparece **✓ Bienvenido** con un brillo verde y se abre la app.
+- Si la contraseña es incorrecta, el botón se sacude en rojo, muestra el motivo y se vuelve a abrir **sin borrar** lo escrito.
+- "¿Olvidaste tu contraseña?" usa el correo escrito; si el botón está cerrado, lo abre para escribirlo.
+- La agenda de turnos ingresa igual (Correo y Clave).
+- Funciona con el autocompletado de contraseñas del teléfono. Componente: `dom-login.js` (The DOM Studio Web).
+
+**Para responder por voz:** "¿Cómo entro?" → Tocá Ingresar, escribí tu correo y tu contraseña, y tocá la flecha.
