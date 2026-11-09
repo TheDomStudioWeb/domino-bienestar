@@ -104,6 +104,7 @@ nav.tabs button[aria-current=page]{color:var(--gold)}nav.tabs button[aria-curren
 @keyframes gsheen{to{transform:translateX(100%)}}@keyframes gspin{to{transform:rotate(360deg)}}
 @media(max-width:360px){.ghero{grid-template-columns:1fr}.gring{justify-self:center}}
 @media(prefers-reduced-motion:reduce){.ghero,.ghero:after,.gsem,.tn,.gorb,.gav{animation:none}.gring .v,.tind{transition:none}}
+#dl-host .dl{--dl-pill-a:#f3dc8f;--dl-pill-b:#c99a2e;--dl-pill-tx:#0A0A0A;--dl-field:var(--pn,#141416);--dl-field-bd:var(--line,rgba(212,175,55,.2));--dl-tx:var(--tx,#f2efe6);--dl-mut:var(--mut,#a8a396);--dl-accent:var(--gold,#D4AF37);--dl-ok:#4CC38A;--dl-bad:#FF6B61;font-family:Montserrat,sans-serif}
 </style></head><body><div class="w">
 <header><div style="min-width:0"><h1 id="neg">Agenda de turnos</h1><small id="who"></small></div><div style="display:flex;gap:8px;align-items:center;flex:0 0 auto"><button class="volv" id="vhub">‹ Inicio</button><button class="salir" id="salir" hidden>Salir</button></div></header>
 <main id="m" aria-live="polite"><div class="cargando">Cargando…</div></main>
@@ -116,6 +117,7 @@ nav.tabs button[aria-current=page]{color:var(--gold)}nav.tabs button[aria-curren
 <button data-t="aviso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>Avisos</button>
 <button data-t="mas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="6" cy="12" r="1.2"/><circle cx="12" cy="12" r="1.2"/><circle cx="18" cy="12" r="1.2"/></svg>Más</button>
 </nav>
+<script src="../dom-login.js"></script>
 <script src="config.js"></script>
 <script type="module">
 import { llamar, msg as msgBase, sesionAgenda, guardarSesionAgenda, abrirSesionAgenda, negocioId } from './api.js';
@@ -150,9 +152,15 @@ async function pLogin(e) {
     if (g) { S.tok = g.tok; S.user = g.user; S.ag = null; return pintar(); }
   }
   $('#tabs').hidden = true; $('#salir').hidden = true; $('#who').textContent = '';
-  M.innerHTML = `<h2>Ingresar</h2><form id="f" novalidate>${e ? err(e) : ''}<label for="em">Correo</label><input id="em" type="email" autocomplete="username" inputmode="email"><label for="cl">Clave</label><div style="display:flex;gap:8px"><input id="cl" type="password" autocomplete="current-password" style="flex:1"><button type="button" class="btn" id="ver" aria-label="Mostrar la clave" aria-pressed="false" style="width:auto;padding:0 16px">👁</button></div><button class="btn" id="go">Ingresar</button></form>`;
-  $('#ver').onclick = () => { const i = $('#cl'), v = i.type === 'password'; i.type = v ? 'text' : 'password'; $('#ver').setAttribute('aria-pressed', String(v)); $('#ver').setAttribute('aria-label', v ? 'Ocultar la clave' : 'Mostrar la clave'); i.focus(); };
-  $('#f').onsubmit = async ev => { ev.preventDefault(); $('#go').disabled = true; $('#go').textContent = 'Ingresando…'; const r = await llamar('login', { email: $('#em').value, clave: $('#cl').value }); if (!r.ok) return pLogin(r.error); S.tok = r.token; S.user = r.usuario; S.salio = false; guardarSes(); S.ag = null; pintar(); };
+  // Ingreso "líquido" (../dom-login.js): el botón se divide en los campos y al entrar se vuelve a unir
+  M.innerHTML = `<h2 style="text-align:center;margin-bottom:18px">Ingresar</h2><div id="dl-host"></div>`;
+  const ing = DomLogin.mount($('#dl-host'), {
+    campos: [{ nombre: 'em', etiqueta: 'Correo', tipo: 'email', autocomplete: 'username', inputmode: 'email' }, { nombre: 'cl', etiqueta: 'Clave', tipo: 'password', autocomplete: 'current-password' }],
+    boton: 'Ingresar', enviando: 'Ingresando…', listo: 'Bienvenido', abierto: !!e,
+    enviar: async v => { const r = await llamar('login', { email: v.em, clave: v.cl }); if (!r.ok) throw new Error(msg(r.error) || 'No se pudo ingresar.'); return r; },
+    hecho: r => { S.tok = r.token; S.user = r.usuario; S.salio = false; guardarSes(); S.ag = null; pintar(); }
+  });
+  if (e) ing.error(msg(e));
 }
 $('#salir').onclick = () => { S.salio = true; S.tok = null; S.user = null; S.ag = null; S.tab = 'agenda'; S.det = null; S.nu = {}; S.rec = ''; S.fecha = hoyL(); guardarSes(); pintar(); };
 document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => { S.tab = b.dataset.t; S.det = null; S.hist = null; S.nu = {}; pintar(); window.scrollTo(0, 0); });
