@@ -63,3 +63,20 @@ Estados del turno: Por confirmar → Confirmado → En sala («Llegó») → Ate
 - Muestra en el teléfono: el próximo turno, cuántos turnos hay hoy, cuántas solicitudes están por confirmar, los turnos de hoy y las novedades de las últimas 48 horas.
 - Se ve dentro del launcher (con la clave del widget) o abriendo `widget.html` y agregándola a la pantalla de inicio. Se actualiza sola cada minuto.
 - La clave se genera ejecutando `prepararWidget` en Apps Script. El widget no muestra teléfonos ni correos.
+
+## Nuevo diseño de la agenda y de la reserva (09/11/2026)
+Mismo estilo que el Inicio de DOMino Bienestar. Cambio solo visual: no cambia ningún turno, estado ni permiso.
+
+**Agenda del personal (`panel.html`):**
+- **Tarjeta del día** (terracota): "4 de 5 turnos confirmados" y un **anillo** con el porcentaje. Alrededor giran las iniciales de las personas con turno activo ese día. Debajo, botones rápidos: "por confirmar" (lleva a la próxima solicitud), "en sala" y "atendidos".
+- **Semana:** de lunes a domingo, con la cantidad de turnos activos de cada día. Tocar un día abre su agenda. Respeta el filtro de profesional.
+- **Tarjetas de turno** redondeadas, con una franja de luz del color del profesional. Hoy, el siguiente turno confirmado que todavía no terminó se marca con un borde dorado y la etiqueta **PRÓXIMO**.
+- **Barra inferior flotante** (Agenda, Nuevo, Avisos, Más) con un haz de luz dorado sobre la sección activa.
+
+**Reserva de pacientes y clientes (`reserva.html`):**
+- Servicios en tarjetas de vidrio, el día elegido en terracota y la hora elegida con brillo dorado.
+- Al terminar, la confirmación aparece en una tarjeta terracota con un **anillo y una tilde que se dibujan**.
+
+Si el teléfono tiene "reducir movimiento", todo aparece sin animaciones.
+
+**Para responder por voz:** "¿Qué es el porcentaje de la agenda?" → Cuántos turnos del día ya están confirmados (incluye los que están en sala o ya fueron atendidos), sin contar los cancelados. "¿Qué significa PRÓXIMO?" → Es el siguiente turno confirmado de hoy.
