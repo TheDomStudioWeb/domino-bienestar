@@ -60,12 +60,57 @@ nav.tabs .n{position:absolute;top:6px;right:calc(50% - 26px);background:var(--wa
 footer{text-align:center;color:var(--mut);font-size:12.5px;padding:22px 0 0;margin-top:26px;border-top:1px solid var(--line)}
 .hp{position:absolute;left:-9999px}
 @media(min-width:520px){.hs{grid-template-columns:repeat(5,1fr)}}
+/* ── Estilo "Glassy Dashboard" (igual que el Inicio de DOMino Bienestar) ── */
+:root{--warm1:#C8673F;--warm2:#7A3A22;--glass:rgba(255,255,255,.05)}
+body{padding-bottom:calc(var(--bar) + 34px + env(safe-area-inset-bottom))}
+.btn,.dnav button,.dnav .fecha,input,select,textarea,.hs button,.rapido,.volv,.salir,.act,.res,.rec,.alerta,.err,.ok,.vacio,.pro{border-radius:12px}
+.dnav .fecha{border-style:solid;background:linear-gradient(160deg,var(--glass),transparent 70%),var(--pn)}
+.ghero{position:relative;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;margin:12px 0;padding:18px 16px;border-radius:20px;overflow:hidden;isolation:isolate;color:#fff;
+  background:radial-gradient(120% 140% at 100% 0%,rgba(232,199,102,.28),transparent 50%),linear-gradient(140deg,var(--warm1) 0%,#A9502F 45%,var(--warm2) 100%);
+  box-shadow:0 18px 40px rgba(200,103,63,.22),inset 0 1px 0 rgba(255,255,255,.25);animation:gin .5s cubic-bezier(.2,.8,.2,1) both}
+.ghero:after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.16) 50%,transparent 65%);transform:translateX(-100%);animation:gsheen 2.4s .5s ease-in-out}
+.ghero .eye{font:700 11.5px Montserrat;letter-spacing:.14em;text-transform:uppercase;opacity:.85;margin:0 0 6px}
+.ghero .big{font:700 27px/1.1 Cinzel,serif;margin:0}.ghero .lbl{margin:3px 0 0;font-size:14.5px;opacity:.9}
+.gchips{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+.gchip{display:inline-flex;align-items:center;gap:6px;padding:0 11px;min-height:34px;border-radius:99px;border:1px solid rgba(255,255,255,.3);background:rgba(10,10,10,.22);color:#fff;font:600 12.5px Montserrat;cursor:pointer}
+.gchip i{width:8px;height:8px;border-radius:50%;box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+.gring{position:relative;width:124px;height:124px}
+.gring svg{width:100%;height:100%;overflow:visible}.gring circle{fill:none;stroke-width:9;stroke-linecap:round}
+.gring .tr{stroke:rgba(255,255,255,.2)}.gring .v{stroke:#fff;transition:stroke-dashoffset 1.1s cubic-bezier(.2,.8,.2,1);filter:drop-shadow(0 0 6px rgba(255,255,255,.55))}
+.gring .pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}.gring .pct b{font:800 28px Montserrat}.gring .pct small{font:700 13px Montserrat;opacity:.85;margin-top:8px}
+.gorb{position:absolute;inset:0;animation:gspin 40s linear infinite;pointer-events:none}
+.gav{position:absolute;width:28px;height:28px;margin:-14px 0 0 -14px;border-radius:50%;background:rgba(10,10,10,.55);border:1.5px solid rgba(255,255,255,.7);display:grid;place-items:center;font:800 10px Montserrat;color:#fff;animation:gspin 40s linear infinite reverse}
+.gsem{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin:0 0 12px;padding:8px;border-radius:16px;border:1px solid var(--line);background:linear-gradient(160deg,var(--glass),transparent 70%),var(--pn);animation:gin .5s .06s cubic-bezier(.2,.8,.2,1) both}
+.gd{display:flex;flex-direction:column;align-items:center;gap:1px;padding:7px 0 6px;border:0;border-radius:12px;background:none;color:var(--tx);cursor:pointer;min-width:0;font-family:Montserrat}
+.gd span{font:600 10.5px Montserrat;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}.gd b{font:800 17px Montserrat}
+.gd em{font:700 10px Montserrat;font-style:normal;color:var(--gold);min-height:14px}
+.gd.hoy b{color:var(--gold)}
+.gd.sel{background:linear-gradient(160deg,var(--warm1),var(--warm2));box-shadow:0 6px 16px rgba(200,103,63,.3)}.gd.sel span,.gd.sel em,.gd.sel b{color:#fff}
+.tn{border-radius:14px;border-left-width:1px;position:relative;overflow:hidden;background:linear-gradient(160deg,var(--glass),transparent 65%),var(--pn);padding-left:18px;animation:gin .45s cubic-bezier(.2,.8,.2,1) both;transition:transform .2s,border-color .2s}
+.tn:before{content:'';position:absolute;left:0;top:10px;bottom:10px;width:4px;border-radius:0 4px 4px 0;background:var(--c,var(--gold));box-shadow:0 0 12px var(--c,var(--gold))}
+.tn:hover{transform:translateY(-2px)}
+.tn.prox{border-color:rgba(212,175,55,.55);box-shadow:0 0 0 1px rgba(212,175,55,.25),0 10px 28px rgba(212,175,55,.12)}
+.tn .proxt{position:absolute;top:10px;right:12px;font:800 10.5px Montserrat;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+.lista .tn:nth-child(2){animation-delay:.05s}.lista .tn:nth-child(3){animation-delay:.1s}.lista .tn:nth-child(4){animation-delay:.15s}.lista .tn:nth-child(n+5){animation-delay:.2s}
+.pill{border-radius:99px}
+nav.tabs{left:10px;right:10px;bottom:calc(10px + env(safe-area-inset-bottom));border:1px solid rgba(255,255,255,.12);border-radius:22px;overflow:hidden;padding:4px;
+  background:rgba(22,24,28,.8);backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);box-shadow:0 12px 34px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06)}
+nav.tabs button{z-index:1}nav.tabs button svg{transition:transform .3s,filter .3s}
+nav.tabs button[aria-current=page]{color:var(--gold)}nav.tabs button[aria-current=page] svg{transform:translateY(-1px);filter:drop-shadow(0 0 6px rgba(212,175,55,.7))}
+.tind{position:absolute;top:0;left:0;height:100%;width:0;pointer-events:none;transition:transform .45s cubic-bezier(.3,1.25,.4,1),width .3s}
+.tind:before{content:'';position:absolute;top:0;left:50%;width:34px;height:3px;margin-left:-17px;border-radius:0 0 4px 4px;background:var(--gold);box-shadow:0 0 12px 2px rgba(212,175,55,.75)}
+.tind:after{content:'';position:absolute;top:3px;left:50%;width:70px;height:78%;margin-left:-35px;clip-path:polygon(30% 0,70% 0,100% 100%,0 100%);background:linear-gradient(180deg,rgba(212,175,55,.28),transparent 85%)}
+@keyframes gin{from{opacity:0;filter:blur(8px);transform:translateY(8px)}to{opacity:1;filter:none;transform:none}}
+@keyframes gsheen{to{transform:translateX(100%)}}@keyframes gspin{to{transform:rotate(360deg)}}
+@media(max-width:360px){.ghero{grid-template-columns:1fr}.gring{justify-self:center}}
+@media(prefers-reduced-motion:reduce){.ghero,.ghero:after,.gsem,.tn,.gorb,.gav{animation:none}.gring .v,.tind{transition:none}}
 </style></head><body><div class="w">
 <header><div style="min-width:0"><h1 id="neg">Agenda de turnos</h1><small id="who"></small></div><div style="display:flex;gap:8px;align-items:center;flex:0 0 auto"><button class="volv" id="vhub">‹ Inicio</button><button class="salir" id="salir" hidden>Salir</button></div></header>
 <main id="m" aria-live="polite"><div class="cargando">Cargando…</div></main>
 <footer>Desarrollado por The DOM Studio Web · WhatsApp 261-3431216 · thedomstudioweb@gmail.com</footer>
 </div>
 <nav class="tabs" id="tabs" hidden aria-label="Secciones">
+<span class="tind" id="tind" aria-hidden="true"></span>
 <button data-t="agenda"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v14H4zM4 10h16M8 3v4M16 3v4"/></svg>Agenda<span class="n" id="nPC" hidden></span></button>
 <button data-t="nuevo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>Nuevo</button>
 <button data-t="aviso"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v11H9l-5 4z"/></svg>Avisos</button>
@@ -129,6 +174,7 @@ async function pintar() {
   if (!S.tok) return pLogin();
   $('#tabs').hidden = false; $('#salir').hidden = false; $('#who').textContent = `${S.user.nombre} · ${S.user.rol}`;
   document.querySelectorAll('#tabs button').forEach(b => b.setAttribute('aria-current', b.dataset.t === S.tab ? 'page' : 'false'));
+  requestAnimationFrame(moverTab);
   if (!S.ag) M.innerHTML = '<div class="cargando">Cargando agenda…</div>';
   if (!(await cargarAgenda())) return; badge();
   if (S.pre && !S.pre.listo) { S.pre.listo = true; try { const c = await conectar(); if (c.ok) S.pre.d = await fch.datosDe(S.pre.cliente); } catch (e) {} S.tab = 'nuevo'; S.nu = { pre: S.pre }; }
@@ -143,8 +189,10 @@ function pAgenda() {
   const del = S.ag.turnos.filter(t => t.fecha === S.fecha && (!S.rec || String(t.recurso_id) === S.rec)).sort((a, b) => String(a.hora).localeCompare(String(b.hora)));
   const act = del.filter(t => ACTIVOS.includes(t.estado)), fin = del.filter(t => !ACTIVOS.includes(t.estado));
   const pc = pend(), proximo = pc.sort((a, b) => (a.fecha + a.hora).localeCompare(b.fecha + b.hora))[0];
-  const tarj = t => { const c = recDe(t.recurso_id).color || '#D4AF37'; return `<button class="tn" data-id="${E(t.id)}" style="--c:${E(c)}"><div class="h">${E(t.hora)}<small>${E(addMin(t.hora, +t.duracion_min))}</small></div><div><b>${E(t.contacto_nombre)}${t.sujeto_nombre ? ' · ' + E(t.sujeto_nombre) : ''}</b><span class="s">${E(t.servicio || svDe(t.servicio_id).nombre || '')} · ${E(recDe(t.recurso_id).nombre || '')}${t.sede ? ' · ' + E(t.sede) : ''}</span><span class="pill ${CLS[t.estado] || ''}">${E(t.estado)}</span></div></button>`; };
+  const ahoraH = `${z(new Date().getHours())}:${z(new Date().getMinutes())}`, prox = S.fecha === hoyL() ? act.find(t => t.estado !== 'Por confirmar' && addMin(t.hora, +t.duracion_min || 30) > ahoraH) : null;
+  const tarj = t => { const c = recDe(t.recurso_id).color || '#D4AF37', esP = prox && t.id === prox.id; return `<button class="tn${esP ? ' prox' : ''}" data-id="${E(t.id)}" style="--c:${E(c)}">${esP ? '<span class="proxt">Próximo</span>' : ''}<div class="h">${E(t.hora)}<small>${E(addMin(t.hora, +t.duracion_min))}</small></div><div><b>${E(t.contacto_nombre)}${t.sujeto_nombre ? ' · ' + E(t.sujeto_nombre) : ''}</b><span class="s">${E(t.servicio || svDe(t.servicio_id).nombre || '')} · ${E(recDe(t.recurso_id).nombre || '')}${t.sede ? ' · ' + E(t.sede) : ''}</span><span class="pill ${CLS[t.estado] || ''}">${E(t.estado)}</span></div></button>`; };
   M.innerHTML = `<div class="dnav"><button id="ant" aria-label="Día anterior">‹</button><label class="fecha"><span>${E(largaF(S.fecha))}<small>Toque para elegir otro día</small></span><input type="date" id="fsel" value="${E(S.fecha)}" aria-label="Elegir fecha de la agenda"></label><button id="sig" aria-label="Día siguiente">›</button></div>
+  ${heroDia(del)}${semana()}
   <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">${S.fecha !== hoyL() ? '<button class="lnk" id="hoy">Ir a hoy</button>' : '<span></span>'}<button class="act" id="act">↻ Actualizar</button></div>
   ${recs.length > 1 ? `<div class="chips" role="group" aria-label="Profesional"><button class="chip" data-r="" aria-pressed="${!S.rec}">Todos</button>${recs.map(r => `<button class="chip" data-r="${E(r.id)}" aria-pressed="${S.rec === String(r.id)}"><i style="background:${E(r.color || '#D4AF37')}"></i>${E(r.nombre)}</button>`).join('')}</div>` : ''}
   ${pc.length ? `<div class="alerta"><span><b>${pc.length}</b> solicitud${pc.length > 1 ? 'es' : ''} por confirmar${proximo ? ' · la próxima: ' + E(corta(proximo.fecha)) + ' ' + E(proximo.hora) : ''}</span>${proximo && proximo.fecha !== S.fecha ? '<button id="irpc">Ver</button>' : ''}</div>` : ''}
@@ -157,8 +205,53 @@ function pAgenda() {
   const h = $('#hoy'); if (h) h.onclick = () => { S.fecha = hoyL(); pintar(); };
   const ip = $('#irpc'); if (ip) ip.onclick = () => { S.fecha = proximo.fecha; pintar(); };
   M.querySelectorAll('.chip').forEach(b => b.onclick = () => { S.rec = b.dataset.r; pAgenda(); });
+  M.querySelectorAll('.gd').forEach(b => b.onclick = () => { S.fecha = b.dataset.f; pintar(); });
+  const gp = $('#gpc'); if (gp) gp.onclick = () => { if (proximo) { S.fecha = proximo.fecha; pintar(); } };
+  animarAnillo();
   M.querySelectorAll('.tn').forEach(b => b.onclick = () => { S.det = { id: b.dataset.id }; pintar(); window.scrollTo(0, 0); });
 }
+
+// ── Tarjeta del día, semana y barra (ref. "Glassy Dashboard V24" / "Glassy Navigation Tabs") ──
+const RMOV = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const inic = n => String(n || '').trim().split(/\s+/).slice(0, 2).map(p => p[0] || '').join('').toUpperCase() || '·';
+let pctPrev = null;
+function heroDia(del) {
+  const vivos = del.filter(t => !['Cancelado', 'Reprogramado'].includes(t.estado));
+  const conf = vivos.filter(t => ['Confirmado', 'En sala', 'Atendido'].includes(t.estado)).length;
+  const n = k => vivos.filter(t => t.estado === k).length, pc = pend().length, sala = n('En sala'), at = n('Atendido');
+  const pct = vivos.length ? Math.round(conf / vivos.length * 100) : 0, R = 46, C = 2 * Math.PI * R;
+  const quien = [...new Set(vivos.filter(t => ACTIVOS.includes(t.estado)).map(t => t.contacto_nombre).filter(Boolean))].slice(0, 4);
+  const orb = quien.map((q, i) => { const a = (-90 + i * 360 / quien.length) * Math.PI / 180; return `<span class="gav" title="${E(q)}" style="left:calc(50% + ${(60 * Math.cos(a)).toFixed(1)}px);top:calc(50% + ${(60 * Math.sin(a)).toFixed(1)}px)">${E(inic(q))}</span>`; }).join('');
+  const chips = [pc ? `<button class="gchip" id="gpc"><i style="background:var(--warn)"></i>${pc} por confirmar</button>` : '', sala ? `<span class="gchip"><i style="background:var(--ok)"></i>${sala} en sala</span>` : '', at ? `<span class="gchip"><i style="background:#fff"></i>${at} ${at === 1 ? 'atendido' : 'atendidos'}</span>` : ''].join('');
+  return `<section class="ghero" aria-label="Resumen del día"><div><p class="eye">${S.fecha === hoyL() ? 'Hoy' : E(corta(S.fecha))} · ${E((S.ag.config || {}).nombre || 'Agenda')}</p>
+    ${vivos.length ? `<p class="big">${conf} de ${vivos.length}</p><p class="lbl">turnos confirmados</p>` : '<p class="big">Sin turnos</p><p class="lbl">para este día todavía</p>'}
+    ${chips ? `<div class="gchips">${chips}</div>` : ''}</div>
+    <div class="gring" role="img" aria-label="${pct}% de los turnos del día confirmados"><svg viewBox="-60 -60 120 120"><circle r="${R}" class="tr"/><circle r="${R}" class="v" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${(C * (1 - (pctPrev ?? 0) / 100)).toFixed(1)}" data-off="${(C * (1 - pct / 100)).toFixed(1)}" transform="rotate(-90)"/></svg>
+    <span class="pct"><b data-p="${pct}">${pctPrev ?? 0}</b><small>%</small></span><span class="gorb">${orb}</span></div></section>`;
+}
+function animarAnillo() {
+  const v = M.querySelector('.gring .v'), b = M.querySelector('.gring .pct b'); if (!v) return;
+  const fin = +b.dataset.p, ini = pctPrev ?? 0; pctPrev = fin;
+  if (RMOV() || ini === fin) { v.style.transition = 'none'; v.setAttribute('stroke-dashoffset', v.dataset.off); b.textContent = fin; return; }
+  requestAnimationFrame(() => requestAnimationFrame(() => v.setAttribute('stroke-dashoffset', v.dataset.off)));
+  const t0 = performance.now(), paso = t => { const q = Math.min(1, (t - t0) / 1100), e = 1 - Math.pow(1 - q, 3); b.textContent = Math.round(ini + (fin - ini) * e); if (q < 1) requestAnimationFrame(paso); };
+  requestAnimationFrame(paso);
+}
+function semana() {
+  const lun = sumDias(S.fecha, -((dow(S.fecha) + 6) % 7)), DC = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  let h = '';
+  for (let i = 0; i < 7; i++) {
+    const f = sumDias(lun, i), n = S.ag.turnos.filter(t => t.fecha === f && ACTIVOS.includes(t.estado) && (!S.rec || String(t.recurso_id) === S.rec)).length;
+    h += `<button class="gd${f === S.fecha ? ' sel' : ''}${f === hoyL() ? ' hoy' : ''}" data-f="${f}" aria-label="${E(largaF(f))}${n ? ', ' + n + ' turnos' : ''}"><span>${f === hoyL() ? 'Hoy' : DC[dow(f)]}</span><b>${+f.slice(8)}</b><em>${n ? n + (n === 1 ? ' turno' : ' turnos') : ''}</em></button>`;
+  }
+  return `<nav class="gsem" aria-label="Semana">${h}</nav>`;
+}
+function moverTab() {
+  const b = document.querySelector('#tabs button[aria-current=page]'), ind = $('#tind');
+  if (!b || !ind || !b.offsetWidth) return;
+  ind.style.width = b.offsetWidth + 'px'; ind.style.transform = `translateX(${b.offsetLeft}px)`;
+}
+window.addEventListener('resize', moverTab);
 
 // ── Detalle del turno ──
 function limpiaTel(t) { return String(t || '').replace(/[^\d]/g, ''); }
