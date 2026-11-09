@@ -244,7 +244,7 @@ const hoyStr = () => { const d = new Date(); return `${d.getFullYear()}-${String
 const diasHasta = (s) => Math.round((new Date(s + 'T12:00:00') - new Date(hoyStr() + 'T12:00:00')) / 86400000);
 const dmy = (s) => /^\d{4}-\d{2}-\d{2}$/.test(s || '') ? s.split('-').reverse().join('/') : '';
 const fechaLarga = (s) => { const t = new Date(s + 'T12:00:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' }); return t.charAt(0).toUpperCase() + t.slice(1); };
-let socios = null, clases = null, clasesErr = '', puestosHoy = [], pendientes = null;
+let socios = null, clases = null, clasesErr = '', puestosHoy = [], pendientes = null, turnosAg = null, segLista = [];
 
 function estilosHub() {
   if ($('bn-css-hub')) return;
@@ -330,7 +330,167 @@ function pintarResumen(r) {
     { n: clases ? deHoy : '–', t: 'Clases que quedan hoy', cls: 'text-verde', go: 'bnVerClases()' }
   ];
   const wv = $('bn-alta-vence'); if (wv) wv.hidden = !usaVencimientos();
-  cont.innerHTML = items.map((i) => `<button type="button" class="res-card" onclick="${i.go}"><span class="numero ${i.cls}">${esc(i.n)}</span><span class="res-t">${esc(i.t)}</span></button>`).join('');
+  // Mini gráfico de los próximos 7 días para cuotas y aptos (ref. "Glassy Dashboard")
+  const spark = { 'Cuotas por vencer': serie7('cuota_vence'), 'Aptos médicos por vencer': serie7('apto_vence') };
+  estilosInicio();
+  cont.classList.add('bnx');
+  const hero = document.querySelector('#vista-hub .hub-hero'); if (hero && cont.previousElementSibling !== hero) hero.after(cont); // la tarjeta va pegada al saludo
+  cont.innerHTML = heroHTML() + semanaHTML() + '<div class="bnx-kpis">' + items.map((i) => {
+    const sp = socios && spark[i.t] ? sparkHTML(spark[i.t], i.cls) : '';
+    return `<button type="button" class="res-card bnx-k" onclick="${i.go}"><span class="numero ${i.cls}" data-n="${esc(i.n)}" data-k="${esc(i.t)}">${esc(i.n)}</span><span class="res-t">${esc(i.t)}</span>${sp}</button>`;
+  }).join('') + '</div>';
+  animarInicio(cont);
+}
+
+// ── Inicio con tarjeta principal, anillo y semana (ref. videos "Glassy Dashboard V24" y "Dashboard V22") ──
+const RM = () => window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+const isoDia = (n) => { const d = new Date(); d.setDate(d.getDate() + n); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+const iniciales = (n) => String(n || '').trim().split(/\s+/).slice(0, 2).map((p) => p[0] || '').join('').toUpperCase() || '·';
+const nombreTurno = (t) => t.cliente_nombre || t.contacto_nombre || t.sujeto_nombre || '';
+const turnoVivo = (t) => !['Cancelado', 'Reprogramado'].includes(t.estado);
+function serie7(campo) { // índice 0 = hoy (incluye lo ya vencido), 1..6 = días siguientes
+  const out = [0, 0, 0, 0, 0, 0, 0];
+  (socios || []).forEach((x) => { if (!/^\d{4}-\d{2}-\d{2}$/.test(x[campo] || '')) return; const d = diasHasta(x[campo]); if (d <= 6) out[Math.max(0, d)]++; });
+  return out;
+}
+function sparkHTML(v, cls) {
+  const m = Math.max(1, ...v), col = /rojo/.test(cls) ? 'var(--rojo-alerta)' : /ambar/.test(cls) ? 'var(--ambar-espera)' : 'var(--verde-ok)';
+  return `<svg class="bnx-spark" viewBox="0 0 70 18" aria-hidden="true">${v.map((n, i) => { const h = n ? Math.max(3, n / m * 16) : 1.5; return `<rect x="${i * 10 + 1}" y="${18 - h}" width="7" height="${h}" rx="1.5" fill="${col}" opacity="${n ? (i ? .55 : 1) : .25}"/>`; }).join('')}</svg>`;
+}
+function metrica() {
+  if (usaVencimientos() && socios) {
+    const con = socios.filter((x) => /^\d{4}-\d{2}-\d{2}$/.test(x.cuota_vence || ''));
+    if (con.length) {
+      const ok = con.filter((x) => diasHasta(x.cuota_vence) >= 0).length;
+      const quien = porVencer('cuota_vence', AVISO_CUOTA_DIAS).concat(porVencer('apto_vence', AVISO_APTO_DIAS)).map((x) => x.nombre_empresa);
+      return { pct: ok / con.length, big: `${ok} de ${con.length}`, lbl: 'socios con la cuota al día', go: 'bnVerCuotas()', quien: [...new Set(quien)], tq: 'Socios con vencimientos cerca' };
+    }
+  }
+  if (turnosAg) {
+    const h = turnosAg.filter((t) => t.fecha === hoyStr() && turnoVivo(t));
+    const conf = h.filter((t) => ['Confirmado', 'En sala', 'Atendido'].includes(t.estado)).length;
+    return { pct: h.length ? conf / h.length : 0, big: h.length ? `${conf} de ${h.length}` : 'Sin turnos', lbl: h.length ? 'turnos de hoy confirmados' : 'cargados para hoy todavía', go: 'bnVerTurnos()', quien: h.map(nombreTurno).filter(Boolean), tq: 'Turnos de hoy' };
+  }
+  if (clases) {
+    const h = clases.filter((c) => c.fecha === hoyStr() && !c.suspendida), cupo = h.reduce((a, c) => a + (c.cupo || 0), 0), ocup = h.reduce((a, c) => a + Math.max(0, (c.cupo || 0) - (c.libres || 0)), 0);
+    if (cupo) return { pct: ocup / cupo, big: `${ocup} de ${cupo}`, lbl: 'lugares ocupados en las clases de hoy', go: 'bnVerClases()', quien: [], tq: '' };
+  }
+  return null;
+}
+function heroHTML() {
+  const m = metrica(), R = 46, C = 2 * Math.PI * R;
+  const cuotas = usaVencimientos() && socios ? porVencer('cuota_vence', AVISO_CUOTA_DIAS).length : null, aptos = usaVencimientos() && socios ? porVencer('apto_vence', AVISO_APTO_DIAS).length : null;
+  const chips = [];
+  if (cuotas != null) chips.push(`<button type="button" class="bnx-chip" onclick="bnVerCuotas()"><i style="background:var(--rojo-alerta)"></i>${cuotas} ${cuotas === 1 ? 'cuota' : 'cuotas'} por vencer</button>`);
+  if (aptos != null) chips.push(`<button type="button" class="bnx-chip" onclick="bnVerAptos()"><i style="background:var(--ambar-espera)"></i>${aptos} ${aptos === 1 ? 'apto' : 'aptos'} por vencer</button>`);
+  if (pendientes) chips.push(`<button type="button" class="bnx-chip" onclick="bnVerTurnos()"><i style="background:var(--gold)"></i>${pendientes.length} por confirmar</button>`);
+  const nom = (negocio && negocio.nombre) || 'Su centro';
+  const avisos = ultimoResumen ? (ultimoResumen.vencidas || 0) + (ultimoResumen.hoy || 0) : 0;
+  const pct = m ? Math.round(m.pct * 100) : 0;
+  const av = m && m.quien.length ? m.quien.slice(0, 4) : [];
+  const orbita = av.map((n, i) => { const a = (-90 + i * 360 / av.length) * Math.PI / 180; return `<span class="bnx-av" title="${esc(n)}" style="left:calc(50% + ${(64 * Math.cos(a)).toFixed(1)}px);top:calc(50% + ${(64 * Math.sin(a)).toFixed(1)}px)"><b>${esc(iniciales(n))}</b></span>`; }).join('');
+  const anillo = m ? `<button type="button" class="bnx-ring" onclick="${m.go}" aria-label="${pct}% ${esc(m.lbl)}"${m.tq ? ` title="${esc(m.tq)}"` : ''}>
+      <svg viewBox="-60 -60 120 120"><circle r="${R}" class="tr"/><circle r="${R}" class="v" stroke-dasharray="${C.toFixed(1)}" stroke-dashoffset="${C.toFixed(1)}" data-off="${(C * (1 - m.pct)).toFixed(1)}" transform="rotate(-90)"/></svg>
+      <span class="bnx-pct"><b data-pct="${pct}">0</b><small>%</small></span>
+      <span class="bnx-orb">${orbita}</span></button>` : '';
+  return `<section class="bnx-hero${m ? '' : ' sin-anillo'}" aria-label="Resumen del día">
+    <div class="bnx-txt"><p class="bnx-eye">${esc(nom)} · hoy</p>
+      ${m ? `<p class="bnx-big">${esc(m.big)}</p><p class="bnx-lbl">${esc(m.lbl)}</p>` : (avisos ? `<p class="bnx-big">${avisos} ${avisos === 1 ? 'aviso' : 'avisos'}</p><p class="bnx-lbl">para revisar hoy</p>` : '<p class="bnx-big">Todo en orden</p><p class="bnx-lbl">No hay avisos para hoy.</p>')}
+      ${chips.length ? `<div class="bnx-chips">${chips.join('')}</div>` : ''}</div>${anillo}</section>`;
+}
+function semanaHTML() {
+  const dias = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+  const celdas = [];
+  for (let i = 0; i < 7; i++) {
+    const f = isoDia(i), d = new Date(f + 'T12:00:00');
+    const cu = (socios || []).some((x) => x.cuota_vence === f || (i === 0 && x.cuota_vence && x.cuota_vence < f && usaVencimientos()));
+    const ap = (socios || []).some((x) => x.apto_vence === f);
+    const sg = segLista.some((t) => t.vencimiento === f || (i === 0 && t.vencimiento && t.vencimiento < f));
+    const nt = turnosAg ? turnosAg.filter((t) => t.fecha === f && turnoVivo(t)).length : 0;
+    const puntos = (usaVencimientos() && cu ? '<i class="r"></i>' : '') + (usaVencimientos() && ap ? '<i class="a"></i>' : '') + (sg ? '<i class="g"></i>' : '');
+    celdas.push(`<button type="button" class="bnx-d${i ? '' : ' hoy'}" onclick="navegarA('calendario')" aria-label="${esc(fechaLarga(f))}"><span>${i ? dias[d.getDay()] : 'Hoy'}</span><b>${d.getDate()}</b>${nt ? `<em>${nt} ${nt === 1 ? 'turno' : 'turnos'}</em>` : ''}<span class="bnx-pts">${puntos}</span></button>`);
+  }
+  const ley = (usaVencimientos() ? '<span><i class="r"></i>Cuotas</span><span><i class="a"></i>Aptos</span>' : '') + '<span><i class="g"></i>Seguimientos</span>';
+  return `<section class="bnx-sem" aria-label="Esta semana"><div class="bnx-sem-d">${celdas.join('')}</div><div class="bnx-ley">${ley}</div></section>`;
+}
+const prevN = {};
+function animarInicio(cont) {
+  const rm = RM();
+  cont.querySelectorAll('.numero[data-k]').forEach((el) => {
+    const v = parseInt(el.dataset.n, 10), k = el.dataset.k, desde = prevN[k];
+    prevN[k] = v;
+    if (isNaN(v) || rm || desde === v) return;
+    const a = isNaN(desde) || desde == null ? 0 : desde, t0 = performance.now();
+    const paso = (t) => { const q = Math.min(1, (t - t0) / 800), e = 1 - Math.pow(1 - q, 3); el.textContent = Math.round(a + (v - a) * e); if (q < 1) requestAnimationFrame(paso); };
+    requestAnimationFrame(paso);
+  });
+  const v = cont.querySelector('.bnx-ring .v'), p = cont.querySelector('.bnx-pct b');
+  if (v) {
+    const fin = +p.dataset.pct, ya = prevN.__pct;
+    if (rm || ya === fin) { v.style.transition = 'none'; v.setAttribute('stroke-dashoffset', v.dataset.off); p.textContent = fin; }
+    else {
+      if (ya != null) { const C = +v.getAttribute('stroke-dasharray'); v.style.transition = 'none'; v.setAttribute('stroke-dashoffset', (C * (1 - ya / 100)).toFixed(1)); }
+      requestAnimationFrame(() => requestAnimationFrame(() => { v.style.transition = ''; v.setAttribute('stroke-dashoffset', v.dataset.off); }));
+      const a = ya || 0, t0 = performance.now();
+      const paso = (t) => { const q = Math.min(1, (t - t0) / 1100), e = 1 - Math.pow(1 - q, 3); p.textContent = Math.round(a + (fin - a) * e); if (q < 1) requestAnimationFrame(paso); };
+      requestAnimationFrame(paso);
+    }
+    prevN.__pct = fin;
+  }
+}
+function estilosInicio() {
+  if ($('bn-css-inicio')) return;
+  const s = document.createElement('style'); s.id = 'bn-css-inicio';
+  s.textContent = `
+  .hub-resumen.bnx{display:block}
+  .bnx{--warm1:#C8673F;--warm2:#7A3A22;--glass:rgba(255,255,255,.06);--glass-b:rgba(255,255,255,.12)}
+  .bnx-hero{position:relative;display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;padding:20px 18px;border-radius:20px;overflow:hidden;isolation:isolate;
+    background:radial-gradient(120% 140% at 100% 0%,rgba(232,199,102,.28),transparent 50%),linear-gradient(140deg,var(--warm1) 0%,#A9502F 45%,var(--warm2) 100%);
+    box-shadow:0 18px 40px rgba(200,103,63,.22),inset 0 1px 0 rgba(255,255,255,.25);color:#fff;animation:bnx-in .55s cubic-bezier(.2,.8,.2,1) both}
+  .bnx-hero:after{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(115deg,transparent 35%,rgba(255,255,255,.16) 50%,transparent 65%);transform:translateX(-100%);animation:bnx-sheen 2.4s .6s ease-in-out}
+  .bnx-hero.sin-anillo{grid-template-columns:1fr}
+  .bnx-eye{font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;opacity:.85;margin:0 0 8px;font-weight:700}
+  .bnx-big{font-family:var(--font-display);font-size:1.75rem;line-height:1.1;margin:0;font-weight:700}
+  .bnx-lbl{margin:4px 0 0;font-size:.92rem;opacity:.9}
+  .bnx-chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+  .bnx-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.28);background:rgba(10,10,10,.22);color:#fff;font:600 .78rem var(--font-sans);cursor:pointer;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+  .bnx-chip i{width:8px;height:8px;border-radius:50%;box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+  .bnx-ring{position:relative;width:132px;height:132px;border:0;background:none;padding:0;cursor:pointer;color:#fff}
+  .bnx-ring svg{width:100%;height:100%;overflow:visible}
+  .bnx-ring circle{fill:none;stroke-width:9;stroke-linecap:round}
+  .bnx-ring .tr{stroke:rgba(255,255,255,.2)}
+  .bnx-ring .v{stroke:#fff;transition:stroke-dashoffset 1.1s cubic-bezier(.2,.8,.2,1);filter:drop-shadow(0 0 6px rgba(255,255,255,.55))}
+  .bnx-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:1px}
+  .bnx-pct b{font-size:1.9rem;font-weight:800;font-variant-numeric:tabular-nums}.bnx-pct small{font-size:.9rem;font-weight:700;opacity:.85;margin-top:8px}
+  .bnx-orb{position:absolute;inset:0;animation:bnx-spin 40s linear infinite;pointer-events:none}
+  .bnx-av{position:absolute;width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;background:rgba(10,10,10,.55);border:1.5px solid rgba(255,255,255,.7);display:grid;place-items:center;animation:bnx-spin 40s linear infinite reverse;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
+  .bnx-av b{font-size:.66rem;font-weight:800;letter-spacing:.02em;color:#fff}
+  .bnx-sem{margin:14px 0;padding:12px;border-radius:16px;background:linear-gradient(160deg,var(--glass),transparent 70%),var(--bg-panel);border:1px solid var(--line);animation:bnx-in .55s .08s cubic-bezier(.2,.8,.2,1) both}
+  .bnx-sem-d{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+  .bnx-d{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 6px;border:0;border-radius:12px;background:none;color:var(--text-main);cursor:pointer;font-family:var(--font-sans);min-width:0}
+  .bnx-d span{font-size:.66rem;color:var(--text-muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+  .bnx-d b{font-size:1.1rem;font-weight:800;font-variant-numeric:tabular-nums}
+  .bnx-d em{font-style:normal;font-size:.58rem;color:var(--gold-light);font-weight:700;white-space:nowrap}
+  .bnx-d.hoy{background:linear-gradient(160deg,var(--warm1),var(--warm2));box-shadow:0 6px 16px rgba(200,103,63,.3)}
+  .bnx-d.hoy span,.bnx-d.hoy em{color:#fff}
+  .bnx-pts{display:flex;gap:3px;min-height:6px;margin-top:2px}
+  .bnx-pts i,.bnx-ley i{width:6px;height:6px;border-radius:50%;display:inline-block}
+  .bnx .r{background:var(--rojo-alerta)}.bnx .a{background:var(--ambar-espera)}.bnx .g{background:var(--gold)}
+  .bnx-d.hoy .bnx-pts i{box-shadow:0 0 0 1.5px #fff}
+  .bnx-ley{display:flex;gap:14px;justify-content:center;margin-top:8px;font-size:.7rem;color:var(--text-muted)}
+  .bnx-ley span{display:inline-flex;align-items:center;gap:5px}
+  .bnx-kpis{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .bnx-k{position:relative;text-align:left;background:linear-gradient(160deg,var(--glass),transparent 65%),var(--bg-panel)!important;border:1px solid var(--line);border-radius:16px!important;transition:transform .2s,border-color .2s;animation:bnx-in .55s cubic-bezier(.2,.8,.2,1) both}
+  .bnx-k:nth-child(2){animation-delay:.12s}.bnx-k:nth-child(3){animation-delay:.18s}.bnx-k:nth-child(4){animation-delay:.24s}.bnx-k:nth-child(5){animation-delay:.3s}
+  .bnx-k:hover{transform:translateY(-3px);border-color:var(--hairline)}
+  .bnx-spark{display:block;width:70px;height:18px;margin-top:8px}
+  @media (min-width:900px){.bnx-kpis{grid-template-columns:repeat(auto-fit,minmax(160px,1fr))}}
+  @media (max-width:380px){.bnx-hero{grid-template-columns:1fr}.bnx-ring{justify-self:center}}
+  @keyframes bnx-in{from{opacity:0;filter:blur(8px);transform:translateY(8px)}to{opacity:1;filter:none;transform:none}}
+  @keyframes bnx-sheen{to{transform:translateX(100%)}}
+  @keyframes bnx-spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.bnx-hero,.bnx-sem,.bnx-k,.bnx-hero:after,.bnx-orb,.bnx-av{animation:none}.bnx-ring .v{transition:none}}`;
+  document.head.appendChild(s);
 }
 
 function pintarClases() {
@@ -360,26 +520,31 @@ function pintarClases() {
 }
 
 window.BIENESTAR_RESUMEN = (r) => { pintarResumen(r); };
+// Si el Inicio se dibujó antes de que cargara este módulo, se vuelve a dibujar con el formato de Bienestar
+if (activo() && window.__hubResumen) pintarResumen(window.__hubResumen);
 window.BIENESTAR_HOY = (lista, hoy, base) => {
   base(lista, hoy);
+  segLista = lista || [];
+  const sem = document.querySelector('#hub-resumen .bnx-sem'); if (sem) sem.outerHTML = semanaHTML();
   const cont = $('hub-lista-hoy');
   if (cont) cont.innerHTML = lista.length ? '<h3 class="bn-sub">Seguimientos</h3>' + cont.innerHTML : '';
   pintarClases();
 };
+if (activo() && window.__hubHoy) { const [l, h, fn] = window.__hubHoy; fn(l, h); }
 // Solicitudes de turno que esperan confirmación (reservas hechas por los clientes en modo «solicitud»). Solo las ve el personal con agenda.
 async function leerPendientes() {
   if (!window.TURNOS_API || !D() || !['senior', 'midsenior', 'asistente'].includes(D().rol)) { pendientes = null; return; }
   await new Promise((ok) => setTimeout(ok, 0)); // si el Hub ya estaba listo al cargar este archivo, deja terminar de definir las funciones de la agenda
   const f = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`, hoy = hoyStr(), lim = new Date(); lim.setDate(lim.getDate() + 120);
-  try { const r = await apiAgenda('agenda', { desde: hoy, hasta: f(lim) }); pendientes = r && r.ok ? (r.turnos || []).filter((t) => t.estado === 'Por confirmar' && t.fecha >= hoy) : null; }
-  catch (e) { pendientes = null; }
+  try { const r = await apiAgenda('agenda', { desde: hoy, hasta: f(lim) }); turnosAg = r && r.ok ? (r.turnos || []) : null; pendientes = turnosAg ? turnosAg.filter((t) => t.estado === 'Por confirmar' && t.fecha >= hoy) : null; }
+  catch (e) { pendientes = null; turnosAg = null; }
 }
 window.bnVerTurnos = () => window.open('turnos/panel.html', '_blank', 'noopener');
 async function refrescarHubBienestar() {
   if (!activo() || !D() || !D().listo) return;
   pintarClases();
   await Promise.all([leerSocios(), leerClases(), leerPendientes()]);
-  if (ultimoResumen) pintarResumen(ultimoResumen);
+  if (ultimoResumen || window.__hubResumen) pintarResumen(ultimoResumen || window.__hubResumen);
   pintarClases();
 }
 

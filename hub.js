@@ -133,6 +133,7 @@ async function renderHub() {
 }
 
 function renderResumen(r) {
+  window.__hubResumen = r; // por si el módulo del rubro carga después (lo redibuja al llegar)
   if (window.BIENESTAR_RESUMEN) return window.BIENESTAR_RESUMEN(r);
   const rol = D().rol;
   const items = [
@@ -146,6 +147,7 @@ function renderResumen(r) {
 }
 
 function renderHoy(lista, hoy) {
+  if (!renderHoy.base) window.__hubHoy = [lista, hoy, renderHoy];
   if (window.BIENESTAR_HOY && !renderHoy.base) return window.BIENESTAR_HOY(lista, hoy, (l, h) => { renderHoy.base = true; try { renderHoy(l, h); } finally { renderHoy.base = false; } });
   const cont = $('hub-lista-hoy');
   if (!lista.length) { cont.innerHTML = '<p class="vacio">No hay vencimientos para hoy ni para los próximos días.</p>'; return; }
