@@ -119,3 +119,18 @@ Una sola copia de DOMino Bienestar (domino-bienestar.web.app) atiende a muchos g
 **Turnos**: el personal entra a la agenda con la misma cuenta del Hub (sesión de 12 h que se renueva sola). Al guardar las actividades del centro, la planilla recibe los servicios y horarios típicos. Los recordatorios por correo recorren todos los centros.
 
 **Si algo no entra**: «sin centro» = a `users/{correo}` le falta `negocio_id`; «prueba terminada» = estado o `vence` del centro.
+
+## Nuevo Inicio: tarjeta del día, semana y barra inferior (09/11/2026)
+Cambio de diseño, no de datos. Referencia: videos "Glassy Dashboard V24" y "Glassy Navigation Tabs" guardados por Daniel.
+- **Tarjeta del día** (pegada al saludo, en tonos terracota): muestra el dato principal del centro con un **anillo de porcentaje**.
+  - Gimnasio, clases y yoga: **socios con la cuota al día** (por ejemplo "5 de 6", 83 %). Alrededor del anillo giran despacio las iniciales de los socios con cuota o apto por vencer; tocar el anillo abre la lista de cuotas.
+  - Consultorios y centros con agenda conectada (por ejemplo urología): **turnos de hoy confirmados** sobre el total del día, con las iniciales de los pacientes de hoy.
+  - Centros con clases, sin cuotas: **lugares ocupados en las clases de hoy**.
+  - Si todavía no hay datos para el anillo, la tarjeta muestra cuántos avisos hay para hoy (o "Todo en orden").
+  - Debajo hay botones rápidos: cuotas por vencer, aptos por vencer y turnos por confirmar.
+- **Semana:** los 7 días desde hoy. Puntos de color: rojo = vence una cuota, ámbar = vence un apto, dorado = hay un seguimiento. Si la agenda está conectada, dice cuántos turnos hay cada día. Tocar un día abre el Calendario.
+- **Indicadores:** los números cuentan hasta su valor al entrar. Cuotas y aptos tienen un mini gráfico de barras de los próximos 7 días (la primera barra es hoy, incluidos los ya vencidos).
+- **Barra inferior (solo en el teléfono):** Inicio, Socios, Seguimientos, Calendario y Chat, con un haz de luz dorado sobre la sección activa. Respeta los roles (Recepción ve "Mis seguimientos"). El menú ☰ sigue estando para cerrar sesión y lo demás.
+- Si el teléfono tiene "reducir movimiento", todo aparece sin animaciones.
+
+**Para responder por voz:** "¿Qué es el porcentaje del Inicio?" → En gimnasios, cuántos socios tienen la cuota al día; en consultorios, cuántos turnos de hoy ya están confirmados. "¿Qué son los puntitos de la semana?" → Rojo cuotas, ámbar aptos médicos, dorado seguimientos de ese día.
