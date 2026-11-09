@@ -13,58 +13,35 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 
-document.getElementById('btn-login').addEventListener('click', async () => {
-    const email = document.getElementById('login-email').value;
-    const password = document.getElementById('login-password').value;
-    const errorDiv = document.getElementById('login-error');
-    const errorMsg = document.getElementById('login-error-msg');
-    const btnLogin = document.getElementById('btn-login');
-
-    if (!email || !password) {
-        errorMsg.innerText = "Completá todos los campos.";
-        errorDiv.style.display = 'block';
-        return;
-    }
-
-    try {
-        btnLogin.innerText = "Ingresando...";
-        btnLogin.disabled = true;
-
-        await setPersistence(auth, browserLocalPersistence);
-        await signInWithEmailAndPassword(auth, email, password);
-        window.location.replace('index.html');
-
-    } catch (error) {
-        btnLogin.innerText = "Ingresar";
-        btnLogin.disabled = false;
-        errorMsg.innerText = "Credenciales incorrectas. Verificá tu email y contraseña.";
-        errorDiv.style.display = 'block';
-        console.error(error);
-    }
+// Ingreso "líquido" (dom-login.js): el botón se divide en los campos y al entrar se vuelve a unir
+const mensajeError = (e) => {
+    const c = (e && e.code) || '';
+    if (c.includes('too-many-requests')) return 'Demasiados intentos. Esperá unos minutos y probá de nuevo.';
+    if (c.includes('network')) return 'No hay conexión. Revisá internet y probá de nuevo.';
+    if (c.includes('invalid-email')) return 'El correo no tiene un formato válido.';
+    return 'Credenciales incorrectas. Verificá tu email y contraseña.';
+};
+window.__dl = window.DomLogin.mount(document.getElementById('dl-host'), {
+    campos: [
+        { nombre: 'email', etiqueta: 'Correo electrónico', tipo: 'email', autocomplete: 'username' },
+        { nombre: 'clave', etiqueta: 'Contraseña', tipo: 'password', autocomplete: 'current-password' }
+    ],
+    boton: 'Ingresar', enviando: 'Ingresando…', listo: 'Bienvenido',
+    enviar: async (v) => {
+        try {
+            await setPersistence(auth, browserLocalPersistence);
+            await signInWithEmailAndPassword(auth, v.email, v.clave);
+        } catch (error) { console.error(error); throw new Error(mensajeError(error)); }
+    },
+    hecho: () => window.location.replace('index.html')
 });
 
-document.getElementById('login-password').addEventListener('keydown', (e) => {
-    if (e.key === 'Enter') {
-        document.getElementById('btn-login').click();
-    }
-});
-
-window.togglePassword = function() {
-    const input = document.getElementById('login-password');
-    const btn = document.getElementById('btn-ojo');
-    if (input.type === 'password') {
-        input.type = 'text';
-        btn.style.opacity = '1';
-    } else {
-        input.type = 'password';
-        btn.style.opacity = '0.5';
-    }
-}
 document.getElementById('link-recuperar').addEventListener('click', async (e) => {
     e.preventDefault();
-    const email = document.getElementById('login-email').value;
+    const email = (window.__dl.valores().email || '').trim();
     if (!email) {
-        alert("Ingresá tu email primero.");
+        window.__dl.abrir();
+        alert("Escribí tu correo y volvé a tocar «¿Olvidaste tu contraseña?».");
         return;
     }
     try {
