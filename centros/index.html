@@ -98,7 +98,7 @@ async function listar() {
       const v = n.vence && n.vence.toDate ? n.vence.toDate() : null, vencido = n.estado === 'prueba' && v && v < new Date();
       const det = n.estado === 'prueba' ? (v ? (vencido ? 'Prueba vencida el ' : 'Prueba hasta el ') + v.toLocaleDateString('es-AR') : 'Prueba sin iniciar (empieza en su primer ingreso)') : '';
       return `<div class="neg"><b>${esc(n.nombre || n.id)}</b><span class="tag ${esc(n.estado)}">${esc(n.estado)}</span><small>${esc(n.id)}${det ? ' · ' + esc(det) : ''}</small>
-        <div class="fila" style="margin-top:8px">${n.estado !== 'activo' ? `<button class="sec" data-a="activo" data-id="${esc(n.id)}">Pasar a activo</button>` : ''}${n.estado !== 'suspendido' ? `<button class="sec" data-a="suspendido" data-id="${esc(n.id)}">Suspender</button>` : ''}${n.estado === 'prueba' ? `<button class="sec" data-a="extender" data-id="${esc(n.id)}">Cambiar plazo</button>` : ''}</div></div>`;
+        <div class="fila" style="margin-top:8px">${n.estado !== 'activo' ? `<button class="sec" data-a="activo" data-id="${esc(n.id)}">Pasar a activo</button>` : ''}${n.estado !== 'suspendido' ? `<button class="sec" data-a="suspendido" data-id="${esc(n.id)}">Suspender</button>` : ''}${n.estado === 'prueba' ? `<button class="sec" data-a="extender" data-id="${esc(n.id)}">Cambiar plazo</button>` : ''}<button class="sec" data-a="odonto" data-id="${esc(n.id)}" data-v="${(n.modulos || {}).odontologia ? '0' : '1'}">${(n.modulos || {}).odontologia ? 'Quitar módulo Odontología' : 'Activar módulo Odontología'}</button></div>${(n.modulos || {}).odontologia ? '<small>Módulo exclusivo: Odontología (historia clínica y odontograma)</small>' : ''}</div>`;
     }).join('');
   } catch (e) { z.textContent = 'No se pudo leer la lista (' + (e.code || e.message) + ').'; }
 }
@@ -110,6 +110,10 @@ $('lista').onclick = async e => {
       const t = prompt('¿Cuántos días de prueba le quedan a partir de hoy? (1 a 90)', '14'); if (t === null) { b.disabled = false; return; }
       const d = Math.floor(Number(t)); if (!(d >= 1 && d <= 90)) { alert('Escriba un número de 1 a 90.'); b.disabled = false; return; }
       await updateDoc(ref, { vence: new Date(Date.now() + d * 86400000) });
+    } else if (a === 'odonto') {
+      const on = b.dataset.v === '1';
+      if (!on && !confirm('¿Quitar el módulo Odontología? La historia clínica no se borra: solo deja de verse en la app.')) { b.disabled = false; return; }
+      await updateDoc(ref, { 'modulos.odontologia': on });
     } else await updateDoc(ref, { estado: a });
   } catch (err) { alert('No se pudo cambiar (' + (err.code || err.message) + ').'); }
   listar();

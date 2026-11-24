@@ -146,3 +146,14 @@ La pantalla de ingreso muestra un solo botón dorado **Ingresar**. Al tocarlo, e
 - Funciona con el autocompletado de contraseñas del teléfono. Componente: `dom-login.js` (The DOM Studio Web).
 
 **Para responder por voz:** "¿Cómo entro?" → Tocá Ingresar, escribí tu correo y tu contraseña, y tocá la flecha.
+
+## Módulo exclusivo Odontología (etapa 1: historia clínica)
+**Qué es:** historia clínica odontológica dentro de la ficha del paciente. Solo aparece en los centros donde The DOM lo activó (pantalla Centros → «Activar módulo Odontología») y solo para profesionales: Dirección y Mid Senior. Recepción (Asistente) no ve nada clínico.
+**Dónde está:** Socios → elegir el paciente → botón **🦷 Historia clínica**. Tiene tres pestañas:
+- **Odontograma:** dentición permanente, temporal o mixta (numeración internacional, 11 a 48 y 51 a 85). Se elige qué marcar (caries, restauración, sellante, corona, endodoncia, extracción, implante, ausente o borrar) y el color: **rojo = a realizar**, **azul = existente**; la caries y la extracción van siempre en rojo y la pieza ausente en gris. Las caras: vestibular, lingual o palatina, mesial, distal y oclusal o incisal. Los cambios quedan «sin guardar» hasta tocar **Guardar odontograma**.
+- **Evoluciones:** registro de cada consulta, con piezas opcionales. **No se pueden editar ni borrar**: para corregir se toca «Corregir», la original queda marcada como corregida y la corrección queda aparte. Cada cambio del odontograma o de la ficha también se anota solo como evolución, con quién lo hizo y cuándo.
+- **Ficha:** obra social, plan y número de afiliado, fecha de nacimiento, condiciones (diabetes, hipertensión, cardiopatía, anticoagulantes, embarazo, fuma, bruxismo), alergias, medicación, otras enfermedades, motivo de consulta y observaciones. Las alergias y condiciones de riesgo se muestran arriba en rojo, en todas las pestañas.
+**Exportar historia en PDF:** arma la copia para el paciente (datos, antecedentes, odontograma dibujado, hallazgos y todas las evoluciones). En el celular se comparte; en la PC se descarga.
+**Por qué no se borra nada:** la historia clínica tiene que ser íntegra e inalterable. Las reglas de Firestore impiden borrar o editar evoluciones, incluso a la Dirección.
+**Datos:** `negocios/{id}/clinica/{paciente}` (ficha y odontograma actual) y `…/evoluciones` (solo se agregan). Gratis, sin Blaze.
+**Próximas etapas:** presupuestos y cobros con Mercado Pago; radiografías en el Drive del consultorio con visor y marcado manual; consentimientos firmados; inventario y laboratorio.

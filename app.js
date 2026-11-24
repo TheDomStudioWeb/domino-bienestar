@@ -717,7 +717,7 @@ async function iniciarApp() {
             } catch (e) { console.warn('No se pudo fijar el vencimiento de la prueba', e); }
         }
         window.DOMINO.negocioId = perfil.negocio_id;
-        window.DOMINO.negocioDoc = { nombre: neg.nombre || '', estado: neg.estado || 'activo', vence: neg.vence && neg.vence.toMillis ? neg.vence.toMillis() : null };
+        window.DOMINO.negocioDoc = { nombre: neg.nombre || '', estado: neg.estado || 'activo', vence: neg.vence && neg.vence.toMillis ? neg.vence.toMillis() : null, modulos: Object.assign({}, neg.modulos || {}) };
         const rolUsuario = perfil.rol_jerarquia;
         window.rolActual = rolUsuario;
         window.nombreDisplay = perfil.nombre_display || '';

@@ -18,6 +18,9 @@ service cloud.firestore {
     }
     function personalDe(nid) { return activoG() && perfilDe().negocio_id == nid && vigente(nid); }
     function seniorDe(nid) { return personalDe(nid) && perfilDe().rol_jerarquia == 'senior'; }
+    // Módulo exclusivo Odontología: solo si The DOM lo activó en el centro (negocios/{id}.modulos.odontologia) y solo para profesionales (no Recepción).
+    function moduloOdonto(nid) { return get(/databases/$(database)/documents/negocios/$(nid)).data.get('modulos', {}).get('odontologia', false) == true; }
+    function profesionalDe(nid) { return personalDe(nid) && perfilDe().rol_jerarquia in ['senior', 'midsenior'] && moduloOdonto(nid); }
 
     // Datos del socio dentro de un centro.
     function clienteDe(nid, id) { return get(/databases/$(database)/documents/negocios/$(nid)/clients/$(id)).data; }
@@ -81,6 +84,22 @@ service cloud.firestore {
 
       match /mensajes/{id} {
         allow read, write: if personalDe(nid);
+      }
+
+      // Historia clínica (módulo Odontología). Nada clínico se borra: la ficha se actualiza y cada cambio queda en una evolución.
+      // Las evoluciones solo se crean, con autor y hora del servidor; una corrección es una evolución nueva que apunta a la anterior.
+      match /clinica/{cid} {
+        allow read, create, update: if profesionalDe(nid);
+        allow delete: if false;
+        match /evoluciones/{eid} {
+          allow read: if profesionalDe(nid);
+          allow create: if profesionalDe(nid)
+            && request.resource.data.autor == mail()
+            && request.resource.data.fecha == request.time
+            && request.resource.data.texto is string && request.resource.data.texto.size() > 0 && request.resource.data.texto.size() <= 8000
+            && request.resource.data.tipo in ['evolucion', 'odontograma', 'ficha', 'correccion'];
+          allow update, delete: if false;
+        }
       }
     }
 
