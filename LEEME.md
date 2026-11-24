@@ -40,3 +40,8 @@ Una sola app para muchos centros: datos en `negocios/{id}/…`, personal en `use
 - Sedes: clave `sedes` en `config` (coma) y columna `sede` en `horarios` y `turnos`. Se editan en el Hub → Horarios de atención → «Sedes y cobro». Acciones: `guardar_sedes`, `guardar_cobro`. La sede del turno la fija el servidor según la franja.
 - Cobro: clave `cobro_url` (solo https). La app solo muestra el enlace; no maneja pagos.
 - **Al publicar esta versión hay que pegar el nuevo Code.gs en Apps Script y volver a implementar (nueva versión).** Pruebas: `node turnos/test/run_sedes.js`.
+
+## Odontología (24/11/2026)
+- Actividad `odontologia` en el catálogo: paciente, Odontólogo/a, puestos «sillón / sillones», servicios típicos (primera consulta, limpieza, arreglo de caries, conducto, extracción, blanqueamiento, ortodoncia, urgencia). Cuenta como centro de salud: la reserva pública no pide motivo de consulta.
+- **Al publicar hay que pegar el nuevo Code.gs en Apps Script y volver a implementar (nueva versión).**
+- Próximo, solo para el centro que lo contrate (interruptor de módulos por centro): historia clínica con odontograma, archivos en el Drive del consultorio y cobro automático con Mercado Pago.

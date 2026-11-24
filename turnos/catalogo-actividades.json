@@ -617,6 +617,78 @@
    }
   },
   {
+   "id": "odontologia",
+   "nombre": "Odontología",
+   "texto": "Consultorio odontológico: consultas, limpiezas, arreglos, tratamientos y controles, con uno o varios sillones.",
+   "persona": "paciente",
+   "recurso": {
+    "nombre": "Odontólogo/a",
+    "tipo": "profesional"
+   },
+   "servicios": [
+    {
+     "nombre": "Primera consulta y diagnóstico",
+     "duracion_min": 30
+    },
+    {
+     "nombre": "Limpieza y control",
+     "duracion_min": 30
+    },
+    {
+     "nombre": "Arreglo de caries",
+     "duracion_min": 60
+    },
+    {
+     "nombre": "Tratamiento de conducto",
+     "duracion_min": 60
+    },
+    {
+     "nombre": "Extracción",
+     "duracion_min": 30
+    },
+    {
+     "nombre": "Blanqueamiento",
+     "duracion_min": 60
+    },
+    {
+     "nombre": "Control de ortodoncia",
+     "duracion_min": 30
+    },
+    {
+     "nombre": "Urgencia",
+     "duracion_min": 30
+    }
+   ],
+   "horarios": [
+    {
+     "dias": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "desde": "09:00",
+     "hasta": "13:00"
+    },
+    {
+     "dias": [
+      1,
+      2,
+      3,
+      4,
+      5
+     ],
+     "desde": "16:00",
+     "hasta": "20:00"
+    }
+   ],
+   "puesto": {
+    "uno": "sillón",
+    "varios": "sillones"
+   }
+  },
+  {
    "id": "otra",
    "nombre": "Otra actividad",
    "texto": "Si su actividad no figura en la lista, elíjala y escriba cómo se llama. Atiende por turno individual.",
