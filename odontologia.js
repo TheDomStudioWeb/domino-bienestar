@@ -452,6 +452,39 @@ function ponerBoton() {
     zona.insertBefore(b, zona.firstChild);
   }
 }
-function iniciar() { if (!habilitado()) return; engancharFicha(); ponerBoton(); }
+// ── Vocabulario de consultorio: en un centro con el módulo Odontología se habla de pacientes, no de socios ──
+const VOCAB = [
+  [/Todo su centro de bienestar en un solo lugar: clases, turnos y socios a un toque\./g, 'Todo su consultorio en un solo lugar: turnos, pacientes, historias clínicas y cobros.'],
+  [/ \(en gimnasios, también cuotas y aptos médicos\)/g, ''],
+  [/avisar vencimiento de cuota/g, 'llamar para un control'],
+  [/centro de bienestar/g, 'consultorio'], [/Centro de bienestar/g, 'Consultorio'],
+  [/Profesor\/a o profesional/g, 'Profesional'], [/\bProfesores\b/g, 'Profesionales'], [/\bprofesores\b/g, 'profesionales'],
+  [/\bSOCIOS\b/g, 'PACIENTES'], [/\bSocios\b/g, 'Pacientes'], [/\bsocios\b/g, 'pacientes'],
+  [/\bSOCIO\b/g, 'PACIENTE'], [/\bSocio\b/g, 'Paciente'], [/\bsocio\b/g, 'paciente']
+];
+const cambiar = (t) => { let r = t; for (const [re, v] of VOCAB) r = r.replace(re, v); return r; };
+function traducirNodo(raiz) {
+  const w = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (n.parentNode && /^(SCRIPT|STYLE|TEXTAREA)$/.test(n.parentNode.nodeName)) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+  const nodos = []; while (w.nextNode()) nodos.push(w.currentNode);
+  nodos.forEach((n) => { if (/ocio|rofesor|bienestar|cuota/i.test(n.nodeValue)) { const v = cambiar(n.nodeValue); if (v !== n.nodeValue) n.nodeValue = v; } });
+  const els = raiz.querySelectorAll ? raiz.querySelectorAll('[placeholder],[aria-label],[title]') : [];
+  [raiz].concat([...els]).forEach((el) => { if (!el.getAttribute) return; ['placeholder', 'aria-label', 'title'].forEach((at) => { const v = el.getAttribute(at); if (v && /ocio|rofesor/i.test(v)) { const n = cambiar(v); if (n !== v) el.setAttribute(at, n); } }); });
+}
+function vocabulario() {
+  if (window.__odVocab) return; window.__odVocab = true;
+  document.title = cambiar(document.title);
+  traducirNodo(document.body);
+  const nativos = { confirm: window.confirm, alert: window.alert, prompt: window.prompt };
+  window.confirm = (m) => nativos.confirm.call(window, cambiar(String(m ?? '')));
+  window.alert = (m) => nativos.alert.call(window, cambiar(String(m ?? '')));
+  window.prompt = (m, d) => nativos.prompt.call(window, cambiar(String(m ?? '')), d);
+  let pend = null;
+  new MutationObserver((ms) => {
+    ms.forEach((m) => { if (m.type === 'characterData') { const n = m.target; if (/ocio|rofesor|bienestar/i.test(n.nodeValue)) { const v = cambiar(n.nodeValue); if (v !== n.nodeValue) n.nodeValue = v; } } else m.addedNodes.forEach((n) => { if (n.nodeType === 1) traducirNodo(n); else if (n.nodeType === 3 && /ocio|rofesor|bienestar/i.test(n.nodeValue)) { const v = cambiar(n.nodeValue); if (v !== n.nodeValue) n.nodeValue = v; } }); });
+    clearTimeout(pend); pend = setTimeout(() => traducirNodo(document.body), 120);
+  }).observe(document.body, { childList: true, subtree: true, characterData: true });
+}
+
+function iniciar() { if (!habilitado()) return; vocabulario(); engancharFicha(); ponerBoton(); }
 window.addEventListener('domino:listo', iniciar);
 if (D() && D().listo) iniciar();

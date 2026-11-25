@@ -142,7 +142,12 @@ function asistente(tabInicial) {
   });
   const verOtra = () => { const on = !!f.querySelector('.bn-act input[value="otra"]:checked'); $('bn-otra').hidden = !on; };
   f.querySelector('.bn-acts').addEventListener('change', () => { pintarEq(); verOtra(); }); verOtra();
-  pintarEq(false); $('bn-ir-sal').onclick = () => { verTab('s'); $('bn-nsal').focus(); };
+  pintarEq(false);
+  // Sin actividades con clases (consultorios, peluquerías…) no se habla de salones: se pasa directo a equipo y puestos.
+  const hayClases = () => tieneClases([...f.querySelectorAll('.bn-act input:checked')].map((i) => i.value));
+  const ajustarSal = () => { const h = hayClases(); $('bn-tab-s').hidden = !h; $('bn-ir-sal').textContent = h ? 'Siguiente: salones →' : 'Siguiente: equipo y puestos →'; };
+  f.querySelectorAll('.bn-act input').forEach((i) => i.addEventListener('change', ajustarSal)); ajustarSal();
+  $('bn-ir-sal').onclick = () => { if (hayClases()) { verTab('s'); $('bn-nsal').focus(); } else verTab('e'); };
   let nombresSal = ((negocio && negocio.salones) || []).slice();
   const offIni = new Set(((negocio && negocio.salones_off) || []).map((x) => x.toLowerCase()));
   let habSal = nombresSal.map((n) => !offIni.has(String(n).toLowerCase()));
@@ -214,7 +219,7 @@ function pintarPanel(abrirPasos) {
     const acts = negocio.actividades || [];
     p.innerHTML = `<h2>${esc(negocio.nombre)}</h2><div class="bn-chips">${acts.map((a) => `<span class="bn-chip">${esc(nombreActividad(a))}</span>`).join('')}</div>${(negocio.salones || []).length ? `<p style="margin:10px 0 0;color:var(--text-muted)">Salones: ${negocio.salones.map((n) => salonCerrado(n) ? `<s>${esc(n)}</s> (inhabilitado)` : esc(n)).join(' · ')}</p>` : ''}
     ${resumenEquipo(acts)}
-    ${senior ? `<div class="bn-fila"><button type="button" class="bn-btn sec" id="bn-abrir">Actividades</button><button type="button" class="bn-btn sec" id="bn-salones">Salones</button>${conPuestos(acts) ? '<button type="button" class="bn-btn sec" id="bn-equipo">Equipo y puestos</button>' : ''}${conPuestos(acts) ? '<button type="button" class="bn-btn sec" id="bn-horarios">Horarios de atención</button>' : ''}${tieneClases(acts) ? '<button type="button" class="bn-btn sec" id="bn-clases-adm">Administrar clases</button>' : ''}</div>` : ''}`;
+    ${senior ? `<div class="bn-fila"><button type="button" class="bn-btn sec" id="bn-abrir">Actividades</button>${tieneClases(acts) ? '<button type="button" class="bn-btn sec" id="bn-salones">Salones</button>' : ''}${conPuestos(acts) ? '<button type="button" class="bn-btn sec" id="bn-equipo">Equipo y puestos</button>' : ''}${conPuestos(acts) ? '<button type="button" class="bn-btn sec" id="bn-horarios">Horarios de atención</button>' : ''}${tieneClases(acts) ? '<button type="button" class="bn-btn sec" id="bn-clases-adm">Administrar clases</button>' : ''}</div>` : ''}`;
   }
   const a = $('bn-abrir'); if (a) a.onclick = () => asistente();
   const sl = $('bn-salones'); if (sl) sl.onclick = () => asistente('s');
@@ -327,7 +332,7 @@ function pintarResumen(r) {
     ...(usaVencimientos() ? [{ n: socios ? cuotas : '–', t: 'Cuotas por vencer', cls: cuotas ? 'text-rojo' : 'text-verde', go: 'bnVerCuotas()' },
     { n: socios ? aptos : '–', t: 'Aptos médicos por vencer', cls: aptos ? 'text-ambar' : 'text-verde', go: 'bnVerAptos()' }] : []),
     { n: (r.vencidas || 0) + (r.hoy || 0), t: 'Avisos de hoy', cls: (r.vencidas || r.hoy) ? 'text-ambar' : 'text-verde', go: r.vencidas ? 'verVencidas()' : `navegarA('${rol === 'asistente' ? 'mis-tareas' : 'kanban'}')` },
-    { n: clases ? deHoy : '–', t: 'Clases que quedan hoy', cls: 'text-verde', go: 'bnVerClases()' }
+    ...(!negocio || tieneClases(negocio.actividades || []) ? [{ n: clases ? deHoy : '–', t: 'Clases que quedan hoy', cls: 'text-verde', go: 'bnVerClases()' }] : [])
   ];
   const wv = $('bn-alta-vence'); if (wv) wv.hidden = !usaVencimientos();
   // Mini gráfico de los próximos 7 días para cuotas y aptos (ref. "Glassy Dashboard")
@@ -497,11 +502,12 @@ function pintarClases() {
   estilosHub();
   const lista = $('hub-lista-hoy'); if (!lista) return;
   let box = $('bn-clases'); if (!box) { box = document.createElement('div'); box.id = 'bn-clases'; box.className = 'bn-clases'; lista.parentNode.insertBefore(box, lista); }
-  const soloPuestos = puestosHoy.length && !tieneClases((negocio && negocio.actividades) || []);
+  const sinClases = !!(negocio && (negocio.actividades || []).length && !tieneClases(negocio.actividades));
+  const soloPuestos = sinClases || (puestosHoy.length && !tieneClases((negocio && negocio.actividades) || []));
   const h2 = document.querySelector('.hub-hoy-head h2'); if (h2) h2.textContent = soloPuestos ? 'Puestos de atención ahora' : 'Clases de hoy y los próximos días';
   const pu = puestosHoy.map((p) => { const lleno = p.libres <= 0; return `<div class="bn-cl${lleno ? ' lleno' : p.libres === 1 ? ' pocos' : ''}"><span class="h" aria-hidden="true">${p.libres}/${p.total}</span><span><b>${esc(p.nombre)}</b><small>${p.profesionales} ${p.profesionales === 1 ? 'profesional' : 'profesionales'}</small></span><span class="bn-cupo">${lleno ? `${esc(p.varios)} ocupadas` : `${p.libres} de ${p.total} ${esc(p.varios)} libres`}${lleno ? '' : '<small>ahora</small>'}</span></div>`; }).join('');
   const bloquePu = pu ? `<div class="bn-dia"><h3>${soloPuestos ? 'Ahora' : 'Puestos de atención ahora'}</h3><div class="bn-cls">${pu}</div></div>` : '';
-  if (soloPuestos && clases && !clases.length) { box.innerHTML = bloquePu; return; }
+  if (soloPuestos && (!clases || !clases.length)) { box.innerHTML = bloquePu || '<p class="bn-aviso">Acá se ve, en cada momento del día, cuántos puestos de atención quedan libres y quién atiende. Aparece cuando la agenda tiene los horarios cargados.</p>'; return; }
   if (!clases) {
     box.innerHTML = bloquePu + (clasesErr === 'sin_conexion_planilla'
       ? '<p class="bn-aviso">Las clases aparecen acá cuando la agenda de turnos está conectada.</p>'
