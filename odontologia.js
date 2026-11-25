@@ -457,6 +457,9 @@ const VOCAB = [
   [/Todo su centro de bienestar en un solo lugar: clases, turnos y socios a un toque\./g, 'Todo su consultorio en un solo lugar: turnos, pacientes, historias clínicas y cobros.'],
   [/ \(en gimnasios, también cuotas y aptos médicos\)/g, ''],
   [/avisar vencimiento de cuota/g, 'llamar para un control'],
+  [/Cuotas por vencer, renovaciones y pendientes, por estado\./g, 'Pendientes y avisos con los pacientes, por estado.'],
+  [/Vencimientos de cuotas y renovaciones del mes, día por día\./g, 'Turnos y avisos del mes, día por día.'],
+  [/Cargar aptos médicos, planes y fichas/g, 'Cargar estudios, planes y fichas'],
   [/centro de bienestar/g, 'consultorio'], [/Centro de bienestar/g, 'Consultorio'],
   [/Profesor\/a o profesional/g, 'Profesional'], [/\bProfesores\b/g, 'Profesionales'], [/\bprofesores\b/g, 'profesionales'],
   [/\bSOCIOS\b/g, 'PACIENTES'], [/\bSocios\b/g, 'Pacientes'], [/\bsocios\b/g, 'pacientes'],
@@ -466,7 +469,7 @@ const cambiar = (t) => { let r = t; for (const [re, v] of VOCAB) r = r.replace(r
 function traducirNodo(raiz) {
   const w = document.createTreeWalker(raiz, NodeFilter.SHOW_TEXT, { acceptNode: (n) => (n.parentNode && /^(SCRIPT|STYLE|TEXTAREA)$/.test(n.parentNode.nodeName)) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
   const nodos = []; while (w.nextNode()) nodos.push(w.currentNode);
-  nodos.forEach((n) => { if (/ocio|rofesor|bienestar|cuota/i.test(n.nodeValue)) { const v = cambiar(n.nodeValue); if (v !== n.nodeValue) n.nodeValue = v; } });
+  nodos.forEach((n) => { if (/ocio|rofesor|bienestar|uota|aptos/i.test(n.nodeValue)) { const v = cambiar(n.nodeValue); if (v !== n.nodeValue) n.nodeValue = v; } });
   const els = raiz.querySelectorAll ? raiz.querySelectorAll('[placeholder],[aria-label],[title]') : [];
   [raiz].concat([...els]).forEach((el) => { if (!el.getAttribute) return; ['placeholder', 'aria-label', 'title'].forEach((at) => { const v = el.getAttribute(at); if (v && /ocio|rofesor/i.test(v)) { const n = cambiar(v); if (n !== v) el.setAttribute(at, n); } }); });
 }
