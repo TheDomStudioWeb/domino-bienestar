@@ -13,7 +13,7 @@ const esc = (v) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '
 const habilitado = () => !!(D() && D().negocioDoc && D().negocioDoc.modulos && D().negocioDoc.modulos.odontologia);
 const esProfesional = () => ['senior', 'midsenior'].includes(window.rolActual);
 const yo = () => String((D().auth && D().auth.currentUser && D().auth.currentUser.email) || D().email || '').toLowerCase();
-const fechaTxt = (t) => { const d = t && t.toDate ? t.toDate() : (t ? new Date(t) : null); return d ? d.toLocaleDateString('es-AR') + ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' }) : 'guardando…'; };
+const fechaTxt = (t) => { const d = t && t.toDate ? t.toDate() : (t ? new Date(t) : null); return d ? d.toLocaleDateString('es-AR') + ' ' + d.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }) : 'guardando…'; };
 
 // ── Odontograma: numeración FDI ─────────────────────────────────────────────
 const PERM = { arriba: [[18, 17, 16, 15, 14, 13, 12, 11], [21, 22, 23, 24, 25, 26, 27, 28]], abajo: [[48, 47, 46, 45, 44, 43, 42, 41], [31, 32, 33, 34, 35, 36, 37, 38]] };
@@ -53,6 +53,7 @@ function estilos() {
   const s = document.createElement('style'); s.id = 'od-css';
   s.textContent = `
   .od-fondo{position:fixed;inset:0;z-index:2100;background:rgba(0,0,0,.82);display:flex;align-items:flex-start;justify-content:center;overflow:auto;padding:max(12px,env(safe-area-inset-top)) 10px 24px}
+  .od-caja [hidden]{display:none!important}
   .od-caja{position:relative;width:min(980px,100%);background:var(--bg-panel,#16181c);border:1px solid var(--gold,#d4af37);border-radius:6px;padding:20px 16px 18px;color:var(--text,#f4f1ea)}
   .od-caja h2{margin:0 40px 2px 0;font-family:Cinzel,serif;color:var(--gold-light,#e8c766);font-size:1.25rem}.od-sub{color:var(--text-muted,#a8a396);font-size:.9rem;margin:0}
   .od-x{position:absolute;top:10px;right:10px;width:40px;height:40px;border:1px solid var(--line,#2a2d33);border-radius:6px;background:transparent;color:inherit;font-size:1.1rem;cursor:pointer}
@@ -119,15 +120,16 @@ function pintar() {
     <h2 id="od-t">Historia clínica</h2><p class="od-sub">${esc(S.nombre)}${os.nombre ? ' · ' + esc(os.nombre) + (os.afiliado ? ' Nº ' + esc(os.afiliado) : '') : ''}</p>
     ${alertas()}
     <div class="od-tabs" role="tablist">
-      ${[['odonto', 'Odontograma'], ['evol', 'Evoluciones'], ['ficha', 'Ficha']].concat(window.odImagenes ? [['img', 'Imágenes']] : []).map(([k, t]) => `<button type="button" role="tab" class="od-tab" data-tab="${k}" aria-selected="${S.tab === k}">${t}</button>`).join('')}
+      ${[['odonto', 'Odontograma'], ['evol', 'Evoluciones'], ['ficha', 'Ficha']].concat(window.odImagenes ? [['img', 'Imágenes']] : []).concat(window.odConsentimientos ? [['cons', 'Consentimientos']] : []).map(([k, t]) => `<button type="button" role="tab" class="od-tab" data-tab="${k}" aria-selected="${S.tab === k}">${t}</button>`).join('')}
     </div>
-    <div id="od-cuerpo">${S.cargando ? '<p>Cargando historia clínica…</p>' : S.tab === 'odonto' ? vOdonto() : S.tab === 'evol' ? vEvol() : S.tab === 'img' ? '<div id="odi-cuerpo"></div>' : vFicha()}</div>
+    <div id="od-cuerpo">${S.cargando ? '<p>Cargando historia clínica…</p>' : S.tab === 'odonto' ? vOdonto() : S.tab === 'evol' ? vEvol() : S.tab === 'img' ? '<div id="odi-cuerpo"></div>' : S.tab === 'cons' ? '<div id="okc-cuerpo"></div>' : vFicha()}</div>
     <div class="od-fila fin"><button type="button" class="od-btn sec" id="od-pdf"${S.cargando ? ' disabled' : ''}>Exportar historia en PDF</button></div>`;
   $('od-x').onclick = intentarCerrar;
   c.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => { S.tab = b.dataset.tab; pintar(); });
   $('od-pdf').onclick = exportarPDF;
   if (S.cargando) return;
   if (S.tab === 'odonto') enlazarOdonto(); else if (S.tab === 'evol') enlazarEvol();
+  else if (S.tab === 'cons' && window.odConsentimientos) window.odConsentimientos.montar($('okc-cuerpo'), { id: S.id, nombre: S.nombre, registrar: escribirEvol });
   else if (S.tab === 'img' && window.odImagenes) window.odImagenes.montar($('odi-cuerpo'), { id: S.id, nombre: S.nombre, registrar: escribirEvol, refrescar: () => { if (S && S.tab === 'img' && $('od-caja')) pintar(); } });
   else enlazarFicha();
 }

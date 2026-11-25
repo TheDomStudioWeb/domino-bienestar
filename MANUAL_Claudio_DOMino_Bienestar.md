@@ -176,3 +176,11 @@ La pantalla de ingreso muestra un solo botón dorado **Ingresar**. Al tocarlo, e
 - **Esquema de la boca:** «Marcar en esquema de la boca» abre un dibujo de las 32 piezas para marcar sin subir nada; al guardar queda como una imagen más del paciente.
 - **Ocultar archivo:** no se borra nunca; se oculta con un motivo, que queda en Evoluciones, y sigue en el Drive.
 - **Conexión:** la primera vez, la Dirección pega en la pestaña Imágenes la dirección del script del consultorio (guía: `odontologia/LEEME-Drive-del-consultorio.md`).
+
+## Módulo Odontología · Consentimientos firmados (etapa 3b)
+**Dónde:** Historia clínica → pestaña **Consentimientos** (solo profesionales).
+- **Firmar:** se elige el modelo → **Firmar consentimiento** → se completa el tratamiento o las piezas (y el DNI si falta) → el texto se arma solo con los datos del paciente, la profesional y el consultorio → firma el paciente en la pantalla con el dedo → firma la profesional → **Guardar consentimiento firmado**.
+- **Menores o representantes:** casilla «Firma otra persona» con nombre, DNI y vínculo; queda escrito en el texto y debajo de la firma.
+- **No se modifica nunca:** si hay un error, se firma uno nuevo. Queda anotado en Evoluciones.
+- **Ver PDF:** arma el documento con el texto y las dos firmas para compartir o imprimir. Funciona aunque el Drive no esté conectado.
+- **Modelos (Dirección):** vienen 4 modelos generales —tratamiento odontológico general, extracción, tratamiento de conducto y blanqueamiento— **para revisar con su asesor**. Se editan, se agregan o se vuelven a los de fábrica. Datos que se completan solos: {paciente}, {dni}, {profesional}, {practica}, {consultorio}, {fecha}.

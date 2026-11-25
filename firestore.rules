@@ -122,6 +122,13 @@ service cloud.firestore {
           allow read, create, update: if profesionalDe(nid);
           allow delete: if false;
         }
+        // Consentimientos firmados: solo se crean (con autor y hora del servidor); nunca se modifican ni se borran.
+        match /consentimientos/{kid} {
+          allow read: if profesionalDe(nid);
+          allow create: if profesionalDe(nid) && request.resource.data.autor == mail() && request.resource.data.fecha == request.time
+            && request.resource.data.firma_paciente is string && request.resource.data.firma_paciente.size() < 400000;
+          allow update, delete: if false;
+        }
       }
     }
 
