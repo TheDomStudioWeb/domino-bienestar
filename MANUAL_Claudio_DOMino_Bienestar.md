@@ -184,3 +184,9 @@ La pantalla de ingreso muestra un solo botón dorado **Ingresar**. Al tocarlo, e
 - **No se modifica nunca:** si hay un error, se firma uno nuevo. Queda anotado en Evoluciones.
 - **Ver PDF:** arma el documento con el texto y las dos firmas para compartir o imprimir. Funciona aunque el Drive no esté conectado.
 - **Modelos (Dirección):** vienen 4 modelos generales —tratamiento odontológico general, extracción, tratamiento de conducto y blanqueamiento— **para revisar con su asesor**. Se editan, se agregan o se vuelven a los de fábrica. Datos que se completan solos: {paciente}, {dni}, {profesional}, {practica}, {consultorio}, {fecha}.
+
+## Horarios de atención: quién los carga
+- Hoy los horarios de cada profesional los carga **la Dirección**: Inicio → recuadro del centro → **Horarios de atención** (pide el correo y la clave de la Agenda de turnos la primera vez). Se elige el profesional, los días y las franjas; hay opción de aplicar lo mismo a todo el equipo.
+- Al elegir la actividad se carga un horario típico (Odontología: lunes a viernes de 9 a 13 y de 16 a 20) y cada profesional nuevo lo copia hasta que se cambie.
+- Vacaciones, feriados y licencias: Agenda de turnos → **Bloquear horarios**.
+- **Opción a pedido (no está hecha):** que cada profesional pueda editar solo su propio horario. Daniel decidió agregarla únicamente si la Dirección de algún centro la pide.
