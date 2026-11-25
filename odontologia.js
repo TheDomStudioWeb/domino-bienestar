@@ -318,6 +318,7 @@ async function abrir(id, nombre) {
   }
 }
 window.abrirHistoriaClinica = abrir;
+window.odEstilos = estilos;
 
 // ── PDF de la historia (para entregar copia al paciente) ────────────────────
 function cargarPdfLib() {

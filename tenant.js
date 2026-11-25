@@ -4,7 +4,7 @@
 // si la colección es de negocio, agrega la ruta negocios/{id}/ por delante. Las demás (users, negocios, superadmins) quedan igual.
 import { collection as _collection, doc as _doc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-export const COLECCIONES_NEGOCIO = ['clients', 'tasks', 'documents', 'entregas', 'accesos_portal', 'mensajes', 'config', 'clinica'];
+export const COLECCIONES_NEGOCIO = ['clients', 'tasks', 'documents', 'entregas', 'accesos_portal', 'mensajes', 'config', 'clinica', 'presupuestos', 'cobros'];
 
 // Negocio activo: el que fijó la sesión del personal (app.js) o, en el portal del socio, el de la dirección (?n=…).
 export function negocioActual() {

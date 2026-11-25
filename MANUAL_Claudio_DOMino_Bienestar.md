@@ -157,3 +157,12 @@ La pantalla de ingreso muestra un solo botón dorado **Ingresar**. Al tocarlo, e
 **Por qué no se borra nada:** la historia clínica tiene que ser íntegra e inalterable. Las reglas de Firestore impiden borrar o editar evoluciones, incluso a la Dirección.
 **Datos:** `negocios/{id}/clinica/{paciente}` (ficha y odontograma actual) y `…/evoluciones` (solo se agregan). Gratis, sin Blaze.
 **Próximas etapas:** presupuestos y cobros con Mercado Pago; radiografías en el Drive del consultorio con visor y marcado manual; consentimientos firmados; inventario y laboratorio.
+
+## Módulo Odontología · Presupuestos y pagos (etapa 2a)
+**Dónde:** Socios → paciente → botón **💲 Presupuestos y pagos**. Lo ve todo el personal del centro con el módulo activo, también Recepción (no muestra nada clínico).
+- **Resumen arriba:** total de presupuestos aceptados, lo cobrado y el saldo a pagar (o a favor).
+- **Presupuestos:** prácticas con pieza, cantidad y precio (el precio sale de la lista de precios y se puede cambiar), casilla ✓ para marcar las prácticas hechas, nota para el paciente y **Enviar por WhatsApp** (abre WhatsApp con el detalle y el total). Estados: Borrador → **Aceptado por el paciente** (recién ahí cuenta en el saldo) → **Tratamiento terminado**. También Rechazado o Anulado. Nunca se borran.
+- **Cobros:** monto, medio (efectivo, transferencia, débito, crédito, Mercado Pago, obra social u otro), concepto (seña, consulta, pago a cuenta…), presupuesto y profesional. **No se borran:** el botón ↺ lo anula con un motivo y queda un registro en negativo.
+- **Solo Dirección:** **Lista de precios** (viene con prácticas típicas para completar) y **Resumen de cobros** del mes, por profesional y por medio de pago.
+**Datos:** `presupuestos`, `cobros` y `config/odonto_aranceles` dentro del centro. Gratis, sin Blaze.
+**Pendiente (etapa 2b):** cobro automático con el Mercado Pago del consultorio y seña al reservar online (el turno se libera a los 30 minutos si no se paga). Se hace cuando el consultorio tenga su cuenta.

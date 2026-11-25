@@ -86,6 +86,22 @@ service cloud.firestore {
         allow read, write: if personalDe(nid);
       }
 
+      // Presupuestos y cobros (módulo Odontología): todo el personal del centro (también Recepción).
+      // Los presupuestos no se borran (se anulan). Los cobros solo se crean; un error se corrige con un cobro de anulación en negativo.
+      match /presupuestos/{id} {
+        allow read, create, update: if personalDe(nid) && moduloOdonto(nid);
+        allow delete: if false;
+      }
+      match /cobros/{id} {
+        allow read: if personalDe(nid) && moduloOdonto(nid);
+        allow create: if personalDe(nid) && moduloOdonto(nid)
+          && request.resource.data.registrado_por == mail()
+          && request.resource.data.fecha == request.time
+          && request.resource.data.monto is number
+          && request.resource.data.medio in ['efectivo', 'transferencia', 'debito', 'credito', 'mercadopago', 'obra_social', 'otro'];
+        allow update, delete: if false;
+      }
+
       // Historia clínica (módulo Odontología). Nada clínico se borra: la ficha se actualiza y cada cambio queda en una evolución.
       // Las evoluciones solo se crean, con autor y hora del servidor; una corrección es una evolución nueva que apunta a la anterior.
       match /clinica/{cid} {
