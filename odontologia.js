@@ -119,15 +119,17 @@ function pintar() {
     <h2 id="od-t">Historia clínica</h2><p class="od-sub">${esc(S.nombre)}${os.nombre ? ' · ' + esc(os.nombre) + (os.afiliado ? ' Nº ' + esc(os.afiliado) : '') : ''}</p>
     ${alertas()}
     <div class="od-tabs" role="tablist">
-      ${[['odonto', 'Odontograma'], ['evol', 'Evoluciones'], ['ficha', 'Ficha']].map(([k, t]) => `<button type="button" role="tab" class="od-tab" data-tab="${k}" aria-selected="${S.tab === k}">${t}</button>`).join('')}
+      ${[['odonto', 'Odontograma'], ['evol', 'Evoluciones'], ['ficha', 'Ficha']].concat(window.odImagenes ? [['img', 'Imágenes']] : []).map(([k, t]) => `<button type="button" role="tab" class="od-tab" data-tab="${k}" aria-selected="${S.tab === k}">${t}</button>`).join('')}
     </div>
-    <div id="od-cuerpo">${S.cargando ? '<p>Cargando historia clínica…</p>' : S.tab === 'odonto' ? vOdonto() : S.tab === 'evol' ? vEvol() : vFicha()}</div>
+    <div id="od-cuerpo">${S.cargando ? '<p>Cargando historia clínica…</p>' : S.tab === 'odonto' ? vOdonto() : S.tab === 'evol' ? vEvol() : S.tab === 'img' ? '<div id="odi-cuerpo"></div>' : vFicha()}</div>
     <div class="od-fila fin"><button type="button" class="od-btn sec" id="od-pdf"${S.cargando ? ' disabled' : ''}>Exportar historia en PDF</button></div>`;
   $('od-x').onclick = intentarCerrar;
   c.querySelectorAll('[data-tab]').forEach((b) => b.onclick = () => { S.tab = b.dataset.tab; pintar(); });
   $('od-pdf').onclick = exportarPDF;
   if (S.cargando) return;
-  if (S.tab === 'odonto') enlazarOdonto(); else if (S.tab === 'evol') enlazarEvol(); else enlazarFicha();
+  if (S.tab === 'odonto') enlazarOdonto(); else if (S.tab === 'evol') enlazarEvol();
+  else if (S.tab === 'img' && window.odImagenes) window.odImagenes.montar($('odi-cuerpo'), { id: S.id, nombre: S.nombre, registrar: escribirEvol, refrescar: () => { if (S && S.tab === 'img' && $('od-caja')) pintar(); } });
+  else enlazarFicha();
 }
 
 // ── Odontograma ─────────────────────────────────────────────────────────────

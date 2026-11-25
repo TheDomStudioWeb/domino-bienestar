@@ -166,3 +166,13 @@ La pantalla de ingreso muestra un solo botón dorado **Ingresar**. Al tocarlo, e
 - **Solo Dirección:** **Lista de precios** (viene con prácticas típicas para completar) y **Resumen de cobros** del mes, por profesional y por medio de pago.
 **Datos:** `presupuestos`, `cobros` y `config/odonto_aranceles` dentro del centro. Gratis, sin Blaze.
 **Pendiente (etapa 2b):** cobro automático con el Mercado Pago del consultorio y seña al reservar online (el turno se libera a los 30 minutos si no se paga). Se hace cuando el consultorio tenga su cuenta.
+
+## Módulo Odontología · Radiografías y estudios (etapa 3a)
+**Dónde:** Historia clínica del paciente → pestaña **Imágenes** (solo profesionales).
+- **Subir:** «+ Subir radiografía o estudio», eligiendo el tipo (radiografía, foto, estudio u otro). Acepta imágenes y PDF de hasta 25 MB; se pueden subir varias juntas. Los archivos se guardan en el **Google Drive del consultorio**, no en The DOM. Cada carga queda anotada en Evoluciones.
+- **Visor:** zoom (botones, rueda del mouse o pellizcando), mover, **Ajustar**, **brillo**, **contraste** y **negativo** (útil en radiografías).
+- **Marcado a mano:** lápiz, flecha, círculo y texto, en cuatro colores; **Deshacer** quita la última marca sin guardar. **Guardar marcas** las deja en la imagen y anota en Evoluciones cuántas marcas y sus textos.
+- **Comparar:** tildar dos imágenes en la grilla → **Comparar 2 seleccionadas** → se ven lado a lado (una arriba de la otra en el celular), cada una con su zoom y su brillo.
+- **Esquema de la boca:** «Marcar en esquema de la boca» abre un dibujo de las 32 piezas para marcar sin subir nada; al guardar queda como una imagen más del paciente.
+- **Ocultar archivo:** no se borra nunca; se oculta con un motivo, que queda en Evoluciones, y sigue en el Drive.
+- **Conexión:** la primera vez, la Dirección pega en la pestaña Imágenes la dirección del script del consultorio (guía: `odontologia/LEEME-Drive-del-consultorio.md`).

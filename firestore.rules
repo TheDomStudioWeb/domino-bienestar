@@ -116,6 +116,12 @@ service cloud.firestore {
             && request.resource.data.tipo in ['evolucion', 'odontograma', 'ficha', 'correccion'];
           allow update, delete: if false;
         }
+        // Radiografías, fotos y estudios: el archivo está en el Drive del consultorio; acá van los datos y las marcas.
+        // No se borran: se pueden ocultar (oculto = true) y queda registrado.
+        match /archivos/{aid} {
+          allow read, create, update: if profesionalDe(nid);
+          allow delete: if false;
+        }
       }
     }
 
