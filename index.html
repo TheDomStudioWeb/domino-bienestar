@@ -545,6 +545,7 @@
     <script type="module" src="odonto-pagos.js"></script>
     <script type="module" src="odonto-imagenes.js"></script>
     <script type="module" src="odonto-consentimientos.js"></script>
+    <script type="module" src="odonto-laboratorio.js"></script>
     <script type="module" src="pdfunif.js"></script>
     <script>
     if ('serviceWorker' in navigator) {
@@ -552,7 +553,7 @@
     }
     // Aviso de versión nueva: compara la huella de los archivos de la app con la del servidor cada vez que se vuelve a la app (máx. cada 5 min).
     (function () {
-        var ARCH = ['index.html', 'app.js', 'hub.js', 'pdfunif.js', 'bienestar.js', 'odontologia.js', 'odonto-pagos.js', 'odonto-imagenes.js', 'odonto-consentimientos.js', 'estudio.js', 'modulos.js'];
+        var ARCH = ['index.html', 'app.js', 'hub.js', 'pdfunif.js', 'bienestar.js', 'odontologia.js', 'odonto-pagos.js', 'odonto-imagenes.js', 'odonto-consentimientos.js', 'odonto-laboratorio.js', 'estudio.js', 'modulos.js'];
         var base = null, ultimo = 0, avisado = false;
         function una(a) {
             return fetch(a, { method: 'HEAD', cache: 'no-store' }).then(function (r) { return r.ok ? (r.headers.get('etag') || r.headers.get('last-modified') || '') : ''; }).catch(function () { return ''; });

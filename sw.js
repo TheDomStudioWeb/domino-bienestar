@@ -1,4 +1,4 @@
-const CACHE_NAME = 'domino-bienestar-v16'; // único por app: las tres apps comparten el mismo dominio
+const CACHE_NAME = 'domino-bienestar-v17'; // único por app: las tres apps comparten el mismo dominio
 const urlsToCache = [
     './',
     'index.html',
@@ -15,6 +15,7 @@ const urlsToCache = [
     'odonto-pagos.js',
     'odonto-imagenes.js',
     'odonto-consentimientos.js',
+    'odonto-laboratorio.js',
     'proximamente.js',
     'nav-inferior.js',
     'manifest.json',

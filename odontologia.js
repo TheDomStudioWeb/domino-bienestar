@@ -269,7 +269,7 @@ function vFicha() {
   const f = S.ficha || {}, os = f.os || {}, c = f.condiciones || {};
   return `<form id="od-fi" novalidate>
     <div class="od-grid">
-      <div><label class="od-l" for="od-os">Obra social o prepaga</label><input class="od-in" id="od-os" value="${esc(os.nombre)}" placeholder="Particular si no tiene"></div>
+      <div><label class="od-l" for="od-os">Obra social o prepaga</label><input class="od-in" id="od-os" list="od-os-l" value="${esc(os.nombre)}" placeholder="Particular si no tiene"><datalist id="od-os-l">${(S.obras || []).map((o) => `<option value="${esc(o)}">`).join('')}</datalist></div>
       <div><label class="od-l" for="od-os-plan">Plan</label><input class="od-in" id="od-os-plan" value="${esc(os.plan)}"></div>
       <div><label class="od-l" for="od-os-af">Número de afiliado</label><input class="od-in" id="od-os-af" value="${esc(os.afiliado)}"></div>
       <div><label class="od-l" for="od-nac">Fecha de nacimiento</label><input class="od-in" type="date" id="od-nac" value="${esc(f.nacimiento)}"></div>
@@ -312,6 +312,8 @@ async function abrir(id, nombre) {
   try {
     const db = D().db;
     const [f, ev] = await Promise.all([getDoc(doc(db, 'clinica', id)), getDocs(query(collection(db, 'clinica', id, 'evoluciones'), orderBy('fecha', 'desc'), limit(500)))]);
+    // Obras sociales cargadas por la Dirección (para elegir en la ficha con el mismo nombre que usan los presupuestos).
+    try { const o = await getDoc(doc(db, 'config', 'odonto_obras')); S.obras = o.exists() ? (o.data().obras || []).map((x) => x.nombre).filter(Boolean) : []; } catch (e) { S.obras = []; }
     const data = f.exists() ? f.data() : {};
     S.ficha = data; S.odo = data.odontograma || {}; S.odoOrig = JSON.stringify(S.odo); S.denticion = data.denticion || 'permanente';
     S.evol = ev.docs.map((d) => Object.assign({ id: d.id }, d.data()));

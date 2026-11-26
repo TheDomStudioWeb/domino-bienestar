@@ -1,4 +1,4 @@
-# Conectar el Drive del consultorio (radiografías y estudios)
+# Conectar el Drive del consultorio (radiografías, estudios y laboratorio)
 
 Se hace **una sola vez por consultorio**, con la cuenta de Google **del consultorio** (no la de The DOM): así los archivos de los pacientes quedan en el Drive de ellos.
 
@@ -15,6 +15,8 @@ Se hace **una sola vez por consultorio**, con la cuenta de Google **del consulto
 6. En DOMino Bienestar, con el usuario de **Dirección**: Pacientes → un paciente → **Historia clínica** → pestaña **Imágenes** → pegar la dirección → **Conectar**.
 
 **Seguridad:** aunque la dirección sea pública, el script solo atiende a quien puede ver la historia clínica de ese paciente (lo consulta a Firestore con la sesión de la persona). Solo acepta imágenes y PDF de hasta 25 MB. Los archivos quedan en la carpeta «DOMino Odontología · Archivos de pacientes», separados por paciente.
+
+**Laboratorio:** el mismo script crea, para cada orden enviada, una carpeta en «DOMino Odontología · Archivos de pacientes → centro → Laboratorio» y la comparte **solo con el mail del laboratorio guardado en esa orden** (lo lee de Firestore, no de lo que mande la app). Acepta además escaneos STL, PLY, OBJ y ZIP. Al anular la orden, el laboratorio pierde el acceso. Copiar radiografías del paciente a la carpeta exige poder ver su historia clínica (profesional).
 
 **Si se cambia el script:** Implementar → Administrar implementaciones → lápiz → Versión: **Nueva versión** (no crear una implementación nueva, porque cambia la dirección).
 

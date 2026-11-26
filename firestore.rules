@@ -102,6 +102,13 @@ service cloud.firestore {
         allow update, delete: if false;
       }
 
+      // Órdenes de trabajo al laboratorio (módulo Odontología): todo el personal del centro. No se borran: se anulan.
+      // Los archivos van a una carpeta del Drive del consultorio compartida solo con el mail del laboratorio de la orden.
+      match /laboratorio/{id} {
+        allow read, create, update: if personalDe(nid) && moduloOdonto(nid);
+        allow delete: if false;
+      }
+
       // Historia clínica (módulo Odontología). Nada clínico se borra: la ficha se actualiza y cada cambio queda en una evolución.
       // Las evoluciones solo se crean, con autor y hora del servidor; una corrección es una evolución nueva que apunta a la anterior.
       match /clinica/{cid} {

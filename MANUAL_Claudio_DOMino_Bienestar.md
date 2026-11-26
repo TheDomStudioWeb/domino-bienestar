@@ -165,6 +165,13 @@ La pantalla de ingreso muestra un solo botón dorado **Ingresar**. Al tocarlo, e
 - **Cobros:** monto, medio (efectivo, transferencia, débito, crédito, Mercado Pago, obra social u otro), concepto (seña, consulta, pago a cuenta…), presupuesto y profesional. **No se borran:** el botón ↺ lo anula con un motivo y queda un registro en negativo.
 - **Solo Dirección:** **Lista de precios** (viene con prácticas típicas para completar) y **Resumen de cobros** del mes, por profesional y por medio de pago.
 **Datos:** `presupuestos`, `cobros` y `config/odonto_aranceles` dentro del centro. Gratis, sin Blaze.
+**Obras sociales (26/11/2026):**
+- **Lista (solo Dirección):** Presupuestos y pagos → **Obras sociales** → «+ Agregar obra social». Por cada una: nombre, si pide autorización previa y, por práctica, **cuánto paga la obra social** y **el coseguro** del paciente (0 = cubre todo). Las prácticas que no estén cargadas se presupuestan a precio particular.
+- **En el presupuesto:** campo **Cobertura** (Particular o una obra social; viene elegida la de la ficha del paciente). Con obra social, cada práctica muestra «Paciente c/u» (coseguro) y «O. social c/u»; abajo, «Paga el paciente» y «Cubre la obra social». Campo para el **Nº de autorización**. El saldo del paciente cuenta solo lo que paga él.
+- **Ficha clínica:** el campo de obra social sugiere las cargadas, para que el nombre coincida.
+- **Resumen de cobros (Dirección):** sección **A facturar a obras sociales**: prácticas marcadas como hechas en el mes, por obra social, con paciente, práctica y Nº de autorización.
+- Los valores reales los pasa el consultorio: con qué obras sociales trabaja, qué cubre cada una y el coseguro.
+
 **Pendiente (etapa 2b):** cobro automático con el Mercado Pago del consultorio y seña al reservar online (el turno se libera a los 30 minutos si no se paga). Se hace cuando el consultorio tenga su cuenta.
 
 ## Módulo Odontología · Radiografías y estudios (etapa 3a)
@@ -184,6 +191,18 @@ La pantalla de ingreso muestra un solo botón dorado **Ingresar**. Al tocarlo, e
 - **No se modifica nunca:** si hay un error, se firma uno nuevo. Queda anotado en Evoluciones.
 - **Ver PDF:** arma el documento con el texto y las dos firmas para compartir o imprimir. Funciona aunque el Drive no esté conectado.
 - **Modelos (Dirección):** vienen 4 modelos generales —tratamiento odontológico general, extracción, tratamiento de conducto y blanqueamiento— **para revisar con su asesor**. Se editan, se agregan o se vuelven a los de fábrica. Datos que se completan solos: {paciente}, {dni}, {profesional}, {practica}, {consultorio}, {fecha}.
+
+## Módulo Odontología · Laboratorio (etapa 4a, 26/11/2026)
+**Dónde:** Socios → paciente → botón **🧪 Laboratorio**. Lo usa todo el personal (también Recepción); agregar radiografías del paciente solo los profesionales.
+- **Nueva orden:** laboratorio, profesional, trabajo (corona, puente, prótesis, placa…), pieza/s, color (A1, A2…), material, fecha de entrega pedida, costo del laboratorio e indicaciones. **Guardar** la deja en preparación; **Enviar al laboratorio** la manda.
+- **Archivos:** «+ Archivo del dispositivo» (fotos, PDF o escaneos STL, PLY, OBJ, ZIP, hasta 25 MB) y «+ De las imágenes del paciente» (copia radiografías o fotos ya cargadas). Al enviar, el script del consultorio crea una carpeta en **su** Drive (DOMino Odontología → centro → Laboratorio) y la comparte **solo con el mail del laboratorio** de esa orden. El laboratorio no necesita la app. Los escaneos muy pesados se mandan desde el programa del escáner.
+- **Avisar:** botones **Avisar por WhatsApp** y **Avisar por mail**: el mensaje lleva paciente, trabajo, piezas, color, material, entrega, indicaciones y el enlace a la carpeta.
+- **Seguimiento:** En el laboratorio → **Volvió para prueba** (con nota) → **Volvió al laboratorio** (lo que se pidió corregir) → **Llegó terminado** → **Entregado al paciente**. Queda el historial con fecha y quién. **Anular orden** pide motivo y le quita al laboratorio el acceso a la carpeta. No se borran.
+- **Todas las órdenes abiertas:** lista de todo el consultorio, ordenada por fecha de entrega; marca en rojo las **atrasadas**.
+- **Solo Dirección:** **Laboratorios** (nombre, mail de Google, WhatsApp, nota) y **Cuenta con laboratorios** (trabajos con costo pendiente de pago, por laboratorio, con botón **Pagado**).
+- **Si el mail del laboratorio no es de Google:** la carpeta se crea igual pero no se puede compartir; la app lo avisa y los archivos se mandan por WhatsApp.
+**Datos:** colección `laboratorio` y `config/odonto_labs` dentro del centro. Gratis, sin Blaze. **Hay que actualizar el script del consultorio** (versión nueva del `Consultorio.gs`).
+**Pendiente a futuro (opción B):** portal propio para el laboratorio, solo si algún laboratorio lo pide.
 
 ## Horarios de atención: quién los carga
 - Hoy los horarios de cada profesional los carga **la Dirección**: Inicio → recuadro del centro → **Horarios de atención** (pide el correo y la clave de la Agenda de turnos la primera vez). Se elige el profesional, los días y las franjas; hay opción de aplicar lo mismo a todo el equipo.
